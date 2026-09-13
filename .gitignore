@@ -6,3 +6,16 @@ node_modules/
 .DS_Store
 Thumbs.db
 .vercel
+
+# Android imzalama — kaybetme, yedekle (README)
+android/inkwell.keystore
+android/keystore.properties
+android/local.properties
+
+# türetilen çıktılar
+www/
+dist/
+android/app/build/
+android/build/
+android/.gradle/
+android/capacitor-cordova-android-plugins/

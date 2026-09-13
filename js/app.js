@@ -841,6 +841,12 @@ function escapeHtml(str) {
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   if (location.protocol === 'file:') return; // dosyadan açıldığında çalışmaz
+
+  // Android sürümünde dosyalar zaten uygulamanın içinde. Orada bir de servis
+  // çalışanı önbelleği tutmak, uygulama güncellendiğinde eski sürümün
+  // sunulmasına yol açardı.
+  if (window.Capacitor?.isNativePlatform?.() || location.protocol === 'capacitor:') return;
+
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 

@@ -63,12 +63,44 @@ python -m http.server 8000
 
 ### Tablete kurmak
 
-Uygulamayı bir yere yayınladıktan sonra (örn. Vercel) tablette Chrome'la aç,
-menüden **Ana ekrana ekle** de. O andan sonra normal bir uygulama gibi açılır,
-tam ekran çalışır ve internet gerektirmez.
+Android için APK üretilir — aşağıdaki bölüme bak. Web sürümünü bir yere
+yayınlayıp (örn. Vercel) tarayıcıdan "Ana ekrana ekle" ile kurmak da mümkün,
+ama APK'da veri tarayıcı temizliğinden etkilenmez.
 
-Bu adım aynı zamanda verinin korunması için de gerekli: ana ekrana eklenmemiş
-siteler tarayıcı tarafından temizlenebilir.
+---
+
+## Android sürümü (APK)
+
+Uygulama Capacitor ile bir Android uygulamasına sarılır. Sunucu gerekmez,
+sözlük dahil her şey APK'nın içindedir.
+
+```bash
+npm run apk
+```
+
+Çıktı: `dist/Inkwell-<sürüm>.apk`. Tablete kopyalayıp dosya yöneticisinden
+açarsan kurulur (bilinmeyen kaynaklara izin vermen istenebilir).
+
+Gereken: JDK 21 ve Android SDK (platform 36, build-tools 36). `ANDROID_HOME`
+ayarlıysa betik gerisini halleder.
+
+### İmzalama anahtarı — yedekle
+
+İlk derlemede `android/inkwell.keystore` üretilir ve parolası
+`android/keystore.properties` dosyasına yazılır. İkisi de depoya girmez.
+
+Bu anahtar uygulamanın kimliğidir: aynı anahtarla imzalanmış yeni sürümler
+tablete mevcut uygulamanın **üzerine** kurulur ve kartların korunur. Anahtar
+kaybolursa güncelleme kurulamaz; uygulamayı silip yeniden kurman gerekir, o da
+içindeki her şeyi siler. **Bu iki dosyayı güvenli bir yere kopyala.**
+
+### Bilinen tuzak: uzun TEMP yolu
+
+Java, Windows'ta NIO pipe'larını AF_UNIX soketiyle kurar ve soket yolu 108
+baytlık sınıra sığmak zorundadır. `TEMP` yolu uzunsa Gradle
+`Unable to establish loopback connection` diye hata verir. `tools/build-apk.mjs`
+derleme sırasında kısa bir geçici dizin (`C:\Temp\inkwell-build`) kullanarak
+bunu önler.
 
 ---
 
@@ -99,7 +131,11 @@ js/pinyin.js          ton sayısı ↔ ton işareti dönüşümü
 data/cedict.tsv       gömülü sözlük (üretilmiş dosya)
 tools/build-dict.mjs  CC-CEDICT → data/cedict.tsv
 tools/make-icons.py   PWA ikonları
-sw.js                 çevrimdışı önbellek
+tools/build-www.mjs   www/ çıktısı (Capacitor bunu paketler)
+tools/build-apk.mjs   imzalama + APK derlemesi
+tools/make-android-assets.py  Android ikonları ve açılış görseli
+android/              Capacitor'ın ürettiği Android projesi
+sw.js                 çevrimdışı önbellek (yalnız web sürümünde)
 ```
 
 Sözlüğü tazelemek için:

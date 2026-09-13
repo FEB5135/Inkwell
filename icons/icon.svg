@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Inkwell">
+  <rect width="512" height="512" rx="112" fill="#faf7f2"/>
+  <rect x="96" y="96" width="320" height="320" rx="52" fill="#c0392b"/>
+  <text x="256" y="258" font-family="Songti SC, SimSun, Noto Serif SC, serif" font-size="210"
+        fill="#faf7f2" text-anchor="middle" dominant-baseline="central">墨</text>
+</svg>

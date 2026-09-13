@@ -1,0 +1,8 @@
+# CC-CEDICT ham dökümü — data/cedict.tsv bundan üretilir, o sürüm depoda durur
+tools/cedict.txt
+tools/cedict.txt.gz
+
+node_modules/
+.DS_Store
+Thumbs.db
+.vercel

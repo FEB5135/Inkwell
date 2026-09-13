@@ -15,13 +15,34 @@ gerektirmez.
 
 **Üç yönlü çalışma.** Her kayıt için ayrı ayrı takip edilen üç kart üretilir:
 
-| Tür | Soru | Ölçtüğü |
-|---|---|---|
-| Tanıma | 好 → ? | okuma |
-| Okunuş | 好 → pinyin'i yaz | ton hassasiyeti |
-| Üretim | "iyi" → ? | hatırlama |
+| Tür | Soru | Yazdığın | Ölçtüğü |
+|---|---|---|---|
+| Okunuş | 老师 | `lao3shi1` | karakter → ses |
+| Anlam | lǎoshī | `teacher` | ses → anlam |
+| Üretim | teacher | `lao3shi1` + karakteri hatırla | anlam → üretim |
 
 Yani 100 karakter girince 300 kart olur, tek tek kart hazırlamazsın.
+
+Üçünde de cevabı **yazarsın**. Kafadan cevaplayıp kendine not vermek
+güvenilir değil: insan bildiğini sanır. Yazılan cevap ölçülebilir.
+
+**Not, doğruya yakınlığa göre önerilir.** Bir hecenin tonunu kaçırmakla
+sözcüğü hiç bilmemek aynı şey değil:
+
+| Cevap | Sonuç | Önerilen |
+|---|---|---|
+| `lao3shi1` | Doğru | İyi |
+| `lao2shi1` | Ton yanlış — hangi hece olduğu işaretlenir | Zor |
+| `lao3si1` | Neredeyse (bir harf sapma) | Zor |
+| başka bir şey | Yanlış | Tekrar |
+
+Öneriyi Enter'la kabul edersin ya da başka bir not verirsin. Anlam
+kartlarında eşleşme esnektir: kayıttaki karşılıklardan herhangi biri tutarsa
+doğru sayılır ("a teacher" ↔ "teacher; instructor").
+
+Karakteri klavyeyle yazdıramadığımız için (Çince klavye gerekir) Üretim
+kartında karakterin doğrulaması sende: hatırlamadıysan düşük not verirsin.
+Kalemle yazma modu gelince o kısım da ölçülebilir olacak.
 
 **Aralıklı tekrar.** SM-2 türevi bir algoritma her kartı ne zaman tekrar
 göstereceğine son performansına bakarak karar verir. Bildiğin karakter
@@ -141,7 +162,9 @@ js/app.js             ekranlar, oturum akışı
 js/store.js           IndexedDB katmanı, yedekleme
 js/srs.js             aralıklı tekrar algoritması
 js/dict.js            sözlük araması
-js/pinyin.js          ton sayısı ↔ ton işareti dönüşümü
+js/pinyin.js          ton dönüşümü, hece ayırma
+js/grade.js           cevabın doğruya yakınlığı
+js/syllables.js       geçerli heceler (üretilmiş dosya)
 data/cedict.tsv       gömülü sözlük (üretilmiş dosya)
 tools/serve.mjs       yerel statik sunucu (Inkwell.bat bunu çalıştırır)
 tools/build-dict.mjs  CC-CEDICT → data/cedict.tsv

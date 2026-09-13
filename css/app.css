@@ -320,6 +320,15 @@ body::before {
   margin: 0;
 }
 .prompt-sub { color: var(--ink-3); font-size: .9rem; margin-top: 10px; }
+.prompt-pinyin {
+  font-size: clamp(2.2rem, 9vw, 3.2rem);
+  font-weight: 600;
+  color: var(--seal);
+  letter-spacing: .02em;
+  margin: 0;
+}
+.answer-input--text { font-family: var(--ui); font-size: 1.15rem; letter-spacing: 0; }
+.back-note { font-size: .8rem; color: var(--ink-3); margin: 12px 0 0; }
 
 .card-back {
   width: 100%;
@@ -357,6 +366,24 @@ body::before {
 .answer-verdict { margin: 12px 0 0; font-weight: 600; font-size: 1.05rem; }
 .answer-verdict.is-ok { color: var(--jade); }
 .answer-verdict.is-bad { color: var(--seal); }
+.answer-verdict.is-close { color: var(--amber); }
+
+.verdict-detail { margin-top: 8px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.syl {
+  font-family: var(--han);
+  font-size: 1.15rem;
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.syl--miss { color: var(--seal); }
+.syl--miss i {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: .62rem;
+  vertical-align: super;
+  margin-left: 2px;
+  opacity: .85;
+}
 .answer-verdict small { display: block; font-weight: 400; color: var(--ink-3); font-size: .8rem; margin-top: 2px; }
 
 .card-actions { padding-bottom: 8px; }

@@ -5,16 +5,28 @@ import * as db from './store.js';
 import * as dict from './dict.js';
 import { toMarks, toNumbers, answerMatches, matchesButTone, looksLikePinyin } from './pinyin.js';
 import { schedule, previewLabel, dueLabel, buildQueue, startOfToday, AGAIN, GOOD } from './srs.js';
+import { comparePinyin, compareMeaning, suggestGrade, VERDICT_TEXT } from './grade.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (sel, root = document) => root.querySelector(sel);
 const els = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-const TYPE_LABEL = {
-  read:   'Tanıma',
-  pinyin: 'Okunuş',
-  recall: 'Üretim',
+/**
+ * Kart türleri.
+ *
+ * Üçü de cevabı yazdırır: kafadan cevaplayıp kendi kendine not vermek
+ * güvenilir değil — insan bildiğini sanır. Yazılan cevap ölçülebilir.
+ *
+ * 'read' eski, kendi not verilen türdür. Artık üretilmez; mevcut kartları
+ * bozulmasın diye gösterimi duruyor.
+ */
+const TYPES = {
+  pinyin:  { label: 'Okunuş', answer: 'pinyin' },
+  meaning: { label: 'Anlam',  answer: 'meaning' },
+  recall:  { label: 'Üretim', answer: 'pinyin' },
+  read:    { label: 'Tanıma', answer: null },
 };
+const TYPE_LABEL = Object.fromEntries(Object.entries(TYPES).map(([k, v]) => [k, v.label]));
 
 const state = {
   settings: null,
@@ -103,8 +115,12 @@ function bindStudy() {
 /** Seçili destenin kartları (tümü seçiliyse hepsi). */
 function scopedCards() {
   const deckId = state.settings.lastDeck;
-  if (!deckId || deckId === 'all') return state.cards;
-  return state.cards.filter((c) => state.notes.get(c.noteId)?.deckId === deckId);
+  const enabled = new Set(state.settings.types);
+  return state.cards.filter((c) => {
+    if (!enabled.has(c.type)) return false;
+    if (!deckId || deckId === 'all') return true;
+    return state.notes.get(c.noteId)?.deckId === deckId;
+  });
 }
 
 async function seenNewToday() {
@@ -205,24 +221,38 @@ function nextCard() {
   $('btn-reveal').hidden = false;
   $('answer-verdict').hidden = true;
 
-  const answerBox = $('answer-box');
-  answerBox.hidden = card.type !== 'pinyin';
+  const answer = TYPES[card.type]?.answer ?? null;
+  $('answer-box').hidden = !answer;
 
-  if (card.type === 'recall') {
+  if (card.type === 'meaning') {
+    // Yalnız okunuş gösterilir: ses ile anlam arasındaki bağı sınar,
+    // karakteri görmek cevabı ele vermesin.
+    front.innerHTML = `<p class="prompt-pinyin">${escapeHtml(toMarks(note.pinyin))}</p>
+      <p class="prompt-sub">Anlamı ne?</p>`;
+  } else if (card.type === 'recall') {
     front.innerHTML = `<p class="prompt-meaning">${escapeHtml(note.meaning)}</p>
-      <p class="prompt-sub">Hangi karakter?</p>`;
-    $('btn-reveal').textContent = 'Göster';
+      <p class="prompt-sub">Okunuşunu yaz, karakteri de aklında tut</p>`;
   } else {
     front.innerHTML = `<p class="hanzi">${escapeHtml(note.hanzi)}</p>`;
-    if (card.type === 'pinyin') {
-      const input = $('answer-input');
-      input.value = '';
-      input.disabled = false;
-      $('btn-reveal').textContent = 'Kontrol et';
-      setTimeout(() => input.focus(), 30);
+  }
+
+  if (answer) {
+    const input = $('answer-input');
+    input.value = '';
+    input.disabled = false;
+    if (answer === 'pinyin') {
+      input.placeholder = 'ni3 hao3';
+      input.className = 'answer-input answer-input--pinyin';
+      $('answer-hint').innerHTML = 'Ton için sayı kullan: <code>hao3</code> → hǎo';
     } else {
-      $('btn-reveal').textContent = 'Göster';
+      input.placeholder = 'anlamı yaz';
+      input.className = 'answer-input answer-input--text';
+      $('answer-hint').textContent = 'Kendi sözcüklerinle yazabilirsin.';
     }
+    $('btn-reveal').textContent = 'Kontrol et';
+    setTimeout(() => input.focus(), 30);
+  } else {
+    $('btn-reveal').textContent = 'Göster';
   }
 }
 
@@ -231,27 +261,53 @@ function revealOrCheck() {
   if (!s || s.revealed) return;
   const card = s.current;
   const note = state.notes.get(card.noteId);
+  const answer = TYPES[card.type]?.answer ?? null;
 
-  if (card.type === 'pinyin') {
+  if (answer) {
     const given = $('answer-input').value;
     if (!given.trim()) return;
-    const ok = answerMatches(given, note.pinyin);
-    const nearMiss = !ok && matchesButTone(given, note.pinyin);
 
-    const verdict = $('answer-verdict');
-    verdict.hidden = false;
-    verdict.className = `answer-verdict ${ok ? 'is-ok' : 'is-bad'}`;
-    verdict.innerHTML = ok
-      ? 'Doğru'
-      : nearMiss
-        ? `Ton yanlış<small>yazdığın: ${escapeHtml(toMarks(given))}</small>`
-        : `Yanlış<small>yazdığın: ${escapeHtml(toMarks(given))}</small>`;
+    const result =
+      answer === 'pinyin'
+        ? comparePinyin(given, note.pinyin)
+        : compareMeaning(given, note.meaning);
 
+    renderVerdict(result, given, answer === 'pinyin' ? note.pinyin : note.meaning);
     $('answer-input').disabled = true;
-    s.autoGrade = ok ? GOOD : AGAIN;
+    s.autoGrade = suggestGrade(result.level);
   }
 
   reveal(note);
+}
+
+/**
+ * Cevabın neden o notu aldığını gösterir.
+ *
+ * Ton hatasında hangi hecenin kaçtığı işaretlenir: "yanlış" demek öğretmez,
+ * "üçüncü ton yerine ikinci yazdın" öğretir.
+ */
+function renderVerdict(result, given, expected) {
+  const verdict = $('answer-verdict');
+  verdict.hidden = false;
+  verdict.className =
+    'answer-verdict ' +
+    (result.level === 'exact' ? 'is-ok' : result.level === 'wrong' ? 'is-bad' : 'is-close');
+
+  let detail = '';
+  if (result.syllables && result.level === 'tone') {
+    detail = result.syllables
+      .map(
+        (x) =>
+          `<span class="syl ${x.ok ? '' : 'syl--miss'}">${escapeHtml(
+            toMarks(x.base + (x.tone || 5))
+          )}${x.ok ? '' : `<i>${x.given ? x.given : '–'}→${x.tone}</i>`}</span>`
+      )
+      .join('');
+  } else if (result.level !== 'exact') {
+    detail = `<small>yazdığın: ${escapeHtml(given)}</small>`;
+  }
+
+  verdict.innerHTML = `${VERDICT_TEXT[result.level]}${detail ? `<div class="verdict-detail">${detail}</div>` : ''}`;
 }
 
 function reveal(note) {
@@ -264,8 +320,14 @@ function reveal(note) {
 
   let html = '';
   if (card.type === 'recall') {
+    // Karakteri klavyeyle yazdıramadığımız için doğrulaması sende: karakteri
+    // hatırlamadıysan okunuşu bilsen de düşük not vermelisin.
     html = `<p class="hanzi">${escapeHtml(note.hanzi)}</p>
-            <p class="back-pinyin">${escapeHtml(pinyin)}</p>`;
+            <p class="back-pinyin">${escapeHtml(pinyin)}</p>
+            <p class="back-note">Karakteri de hatırladın mı? Hatırlamadıysan Zor ya da Tekrar ver.</p>`;
+  } else if (card.type === 'meaning') {
+    html = `<p class="hanzi">${escapeHtml(note.hanzi)}</p>
+            <p class="back-meaning">${escapeHtml(note.meaning)}</p>`;
   } else {
     html = `<p class="back-pinyin">${escapeHtml(pinyin)}</p>
             <p class="back-meaning">${escapeHtml(note.meaning)}</p>`;
@@ -793,8 +855,8 @@ function renderBrowse() {
 
 function bindSettings() {
   const s = state.settings;
-  $('opt-type-read').checked = s.types.includes('read');
   $('opt-type-pinyin').checked = s.types.includes('pinyin');
+  $('opt-type-meaning').checked = s.types.includes('meaning');
   $('opt-type-recall').checked = s.types.includes('recall');
   $('opt-new').value = s.newPerDay;
   $('opt-max').value = s.maxReviews;
@@ -802,17 +864,17 @@ function bindSettings() {
 
   const syncTypes = async () => {
     const types = [];
-    if ($('opt-type-read').checked) types.push('read');
     if ($('opt-type-pinyin').checked) types.push('pinyin');
+    if ($('opt-type-meaning').checked) types.push('meaning');
     if ($('opt-type-recall').checked) types.push('recall');
-    if (!types.length) { toast('En az bir tür açık kalmalı'); $('opt-type-read').checked = true; return; }
+    if (!types.length) { toast('En az bir tür açık kalmalı'); $('opt-type-pinyin').checked = true; return; }
     state.settings.types = types;
     await db.setSetting('types', types);
     const added = await db.backfillCards(types);
     if (added) toast(`${added} yeni kart üretildi`);
     await refresh();
   };
-  ['opt-type-read', 'opt-type-pinyin', 'opt-type-recall'].forEach((id) =>
+  ['opt-type-pinyin', 'opt-type-meaning', 'opt-type-recall'].forEach((id) =>
     $(id).addEventListener('change', syncTypes)
   );
 

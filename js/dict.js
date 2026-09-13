@@ -9,6 +9,18 @@
  */
 import { toneless, toMarks, canonical } from './pinyin.js';
 
+/**
+ * Sözlük kayıtlarının arama anahtarları.
+ *
+ * CC-CEDICT okunuşları zaten hecelere ayrılmış ve tonları sayıyla yazılmış
+ * ("lao3 shi1"), bu yüzden burada hece çözümlemesine gerek yok — 125 bin
+ * kaydı yüklerken bunu atlamak açılışı belirgin biçimde hızlandırıyor.
+ * Kullanıcı girdisi ise çözümlemeden geçer (pinyin.js).
+ */
+const entryTonedKey = (pinyin) =>
+  pinyin.toLowerCase().replace(/u:/g, 'v').replace(/\s+/g, '').replace(/5/g, '');
+const entryBareKey = (pinyin) => entryTonedKey(pinyin).replace(/[1-4]/g, '');
+
 const CJK = /[㐀-鿿豈-﫿]/;
 const LIMIT = 60;
 
@@ -42,8 +54,8 @@ export function load(onProgress) {
       const parts = line.split('\t');
       if (parts.length < 4) continue;
       rows[n] = parts;
-      pinyinKey[n] = toneless(parts[2]);
-      tonedKey[n] = canonical(parts[2]);
+      pinyinKey[n] = entryBareKey(parts[2]);
+      tonedKey[n] = entryTonedKey(parts[2]);
       meaningKey[n] = parts[3].toLowerCase();
       n++;
     }

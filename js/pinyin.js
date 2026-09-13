@@ -6,6 +6,8 @@
  * Cevap denetiminde de her iki yazım kabul edilir.
  */
 
+import { SYLLABLES } from './syllables.js';
+
 const MARKS = {
   a: 'aāáǎà', e: 'eēéěè', i: 'iīíǐì',
   o: 'oōóǒò', u: 'uūúǔù', ü: 'üǖǘǚǜ',
@@ -60,28 +62,122 @@ export function toMarks(input) {
   });
 }
 
-/** Ton işaretli metni "ni3hao3" biçimine çevirir. */
+/**
+ * Metni harf dizisine ve her harfe düşen tona ayırır.
+ *
+ * Hem "lao3" hem "lǎo" aynı sonucu verir: harfler "lao", ton 3. Sayılar
+ * kendinden önceki harfe bağlanır, işaretler bulundukları harfe.
+ */
+function decompose(input) {
+  const letters = [];
+  const tones = [];
+  for (const raw of unifyU(String(input))) {
+    const ch = raw.toLowerCase();
+    if (ch >= '1' && ch <= '5') {
+      if (letters.length) tones[letters.length - 1] = Number(ch);
+      continue;
+    }
+    const marked = FROM_MARK.get(ch);
+    if (marked) {
+      // Hece dağarcığı ü yerine v yazar; işaretli harfte de aynı biçim.
+      letters.push(marked[0] === 'ü' ? 'v' : marked[0]);
+      tones.push(marked[1]);
+      continue;
+    }
+    if (/[a-zü]/.test(ch)) {
+      letters.push(ch === 'ü' ? 'v' : ch);
+      tones.push(0);
+      continue;
+    }
+    letters.push(null); // hece sınırı (boşluk, tire, noktalama)
+    tones.push(0);
+  }
+  return { letters, tones };
+}
+
+/**
+ * Bir harf dizisini hecelere böler.
+ *
+ * Hece sınırları her zaman belirgin değil ("xian" tek hece mi, xi+an mı), o
+ * yüzden geri izlemeli arama yapılıp en az parçalı bölünme seçilir — Çince'de
+ * doğru olan odur.
+ *
+ * Ton, hecenin kapsadığı harflerden hangisinde bulunduysa ondan alınır;
+ * böylece "lǎoshī" ile "lao3shi1" aynı sonuca çıkar.
+ */
+export function segment(input) {
+  const { letters, tones } = decompose(input);
+  const out = [];
+  let run = [];
+  let runTones = [];
+
+  const flush = () => {
+    if (!run.length) return true;
+    const parts = splitRun(run.join(''), runTones);
+    run = [];
+    runTones = [];
+    if (!parts) return false;
+    out.push(...parts);
+    return true;
+  };
+
+  for (let i = 0; i < letters.length; i++) {
+    if (letters[i] === null) {
+      if (!flush()) return null;
+      continue;
+    }
+    run.push(letters[i]);
+    runTones.push(tones[i]);
+  }
+  return flush() ? out : null;
+}
+
+function splitRun(text, tones) {
+  const memo = new Map();
+
+  const walk = (i) => {
+    if (i >= text.length) return [];
+    if (memo.has(i)) return memo.get(i);
+
+    let best = null;
+    for (let len = Math.min(6, text.length - i); len >= 1; len--) {
+      const base = text.slice(i, i + len);
+      if (!SYLLABLES.has(base)) continue;
+      const rest = walk(i + len);
+      if (rest === null) continue;
+
+      let tone = 0;
+      for (let k = i; k < i + len; k++) if (tones[k]) tone = tones[k];
+
+      const candidate = [{ base, tone: tone === 5 ? 0 : tone }, ...rest];
+      if (!best || candidate.length < best.length) best = candidate;
+    }
+    memo.set(i, best);
+    return best;
+  };
+
+  return walk(0);
+}
+
+/**
+ * Ton işaretli metni "ni3hao3" biçimine çevirir.
+ *
+ * Hecelere ayrılabiliyorsa ton numarası hecenin sonuna konur; ayrılamıyorsa
+ * (yazım hatası, pinyin olmayan metin) harfler olduğu gibi bırakılır ve ton
+ * bulunduğu yere yazılır.
+ */
 export function toNumbers(input) {
   if (!input) return '';
+  const segs = segment(input);
+  if (segs) return segs.map((s) => s.base + (s.tone || '')).join('');
+
+  const { letters, tones } = decompose(input);
   let out = '';
-  let pendingTone = '';
-  for (const ch of unifyU(String(input))) {
-    const hit = FROM_MARK.get(ch.toLowerCase());
-    if (hit && hit[1] > 0) {
-      out += hit[0];
-      pendingTone = String(hit[1]);
-      continue;
-    }
-    if (/[a-zA-ZüÜ]/.test(ch)) {
-      out += ch.toLowerCase();
-      continue;
-    }
-    // hece sınırı: bekleyen tonu buraya bırak
-    if (pendingTone) { out += pendingTone; pendingTone = ''; }
-    out += ch;
+  for (let i = 0; i < letters.length; i++) {
+    out += letters[i] ?? ' ';
+    if (tones[i]) out += tones[i];
   }
-  if (pendingTone) out += pendingTone;
-  return out;
+  return out.trim();
 }
 
 /** Aramada kullanılan biçim: ton yok, boşluk yok, küçük harf. */

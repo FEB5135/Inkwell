@@ -166,3 +166,32 @@ for (const p of ['ni3', 'hao3', 'shui3', 'ma1', 'shi4', 'wo3', 'ta1', 'shu1',
   const hit = firstFor(p);
   console.log(`  ${p.padEnd(10)} -> ${hit ? `${hit.simp}  ${hit.meaning.slice(0, 40)}` : '—'}`);
 }
+
+/* ── hece dağarcığı ── */
+
+// Cevap denetimi, kullanıcının boşluksuz yazdığı "laoshi" gibi girdileri
+// hecelere ayırmak zorunda ("lao" + "shi"). Geçerli hece listesini elle
+// yazmak yerine sözlükten topluyoruz: CC-CEDICT'in okunuşları zaten hecelere
+// ayrılmış durumda, yani bu liste tanım gereği eksiksiz.
+{
+  const syllables = new Set();
+  for (const e of entries) {
+    for (const syl of e.pinyin.split(/\s+/)) {
+      const bare = syl
+        .toLowerCase()
+        .replace(/u:/g, 'v')
+        .replace(/[1-5]/g, '')
+        .replace(/[^a-zv]/g, '');
+      if (bare) syllables.add(bare);
+    }
+  }
+  const sorted = [...syllables].sort();
+  writeFileSync(
+    'js/syllables.js',
+    '// ÜRETİLMİŞ DOSYA — tools/build-dict.mjs yazar, elle değiştirme.\n' +
+      '// CC-CEDICT okunuşlarında geçen bütün heceler (ü yerine v).\n' +
+      `export const SYLLABLES = new Set(${JSON.stringify(sorted)});\n`,
+    'utf8'
+  );
+  console.log(`\n${sorted.length} hece -> js/syllables.js`);
+}

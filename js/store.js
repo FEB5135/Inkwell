@@ -257,7 +257,7 @@ export async function reviewsSince(ts) {
 /* ───────────────────────── ayarlar ───────────────────────── */
 
 const DEFAULTS = {
-  types: ['read', 'pinyin', 'recall'],
+  types: ['pinyin', 'meaning', 'recall'],
   newPerDay: 15,
   maxReviews: 150,
   tts: false,
@@ -267,7 +267,16 @@ const DEFAULTS = {
 export async function getSettings() {
   const rows = await tx(['meta'], 'readonly', (s) => asArray(s));
   const stored = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-  return { ...DEFAULTS, ...stored };
+  const settings = { ...DEFAULTS, ...stored };
+
+  // Eski 'read' türü (汉 → anlamı kafandan söyle, kendin not ver) yerini
+  // yazdıran 'meaning' türüne bıraktı. Eski kartlar silinmez, sadece sıraya
+  // girmez; kullanıcı isterse ayarlardan geri açabilir.
+  if (settings.types.includes('read')) {
+    settings.types = [...new Set(settings.types.map((t) => (t === 'read' ? 'meaning' : t)))];
+    await setSetting('types', settings.types);
+  }
+  return settings;
 }
 
 export async function setSetting(key, value) {

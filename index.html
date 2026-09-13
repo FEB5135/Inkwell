@@ -74,7 +74,7 @@
           <input type="text" id="answer-input" class="answer-input" autocomplete="off"
                  autocorrect="off" autocapitalize="off" spellcheck="false"
                  placeholder="ni3 hao3" inputmode="latin" enterkeyhint="done">
-          <p class="answer-hint">Ton için sayı kullan: <code>hao3</code> → hǎo</p>
+          <p class="answer-hint" id="answer-hint">Ton için sayı kullan: <code>hao3</code> → hǎo</p>
           <p class="answer-verdict" id="answer-verdict" hidden></p>
         </div>
 
@@ -192,13 +192,16 @@ lao3shi1 öğretmen
 
     <div class="setting-group">
       <h2 class="group-title">Kart türleri</h2>
-      <p class="hint">Her kayıt seçtiğin türler için ayrı ayrı takip edilir.</p>
-      <label class="check"><input type="checkbox" id="opt-type-read" checked>
-        <span><b>Tanıma</b><i>汉 → okunuş + anlam</i></span></label>
+      <p class="hint">
+        Her kayıt seçtiğin türler için ayrı ayrı takip edilir. Üçünde de cevabı
+        yazarsın; not, cevabın doğruya yakınlığına göre önerilir.
+      </p>
       <label class="check"><input type="checkbox" id="opt-type-pinyin" checked>
-        <span><b>Okunuş</b><i>汉 → pinyin'i yaz (tonuyla)</i></span></label>
+        <span><b>Okunuş</b><i>汉 → pinyin'i yaz</i></span></label>
+      <label class="check"><input type="checkbox" id="opt-type-meaning" checked>
+        <span><b>Anlam</b><i>hǎo → anlamını yaz</i></span></label>
       <label class="check"><input type="checkbox" id="opt-type-recall" checked>
-        <span><b>Üretim</b><i>anlam → karakteri hatırla</i></span></label>
+        <span><b>Üretim</b><i>anlam → okunuşu yaz, karakteri hatırla</i></span></label>
     </div>
 
     <div class="setting-group">

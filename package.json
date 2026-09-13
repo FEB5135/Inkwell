@@ -6,8 +6,9 @@
     "dict": "node tools/build-dict.mjs",
     "icons": "python tools/make-icons.py",
     "build": "node tools/build-www.mjs",
-    "serve": "python -m http.server 4173",
-    "apk": "node tools/build-www.mjs && cap sync android && node tools/build-apk.mjs"
+    "serve": "node tools/serve.mjs",
+    "apk": "node tools/build-www.mjs && cap sync android && node tools/build-apk.mjs",
+    "start": "node tools/serve.mjs"
   },
   "repository": {
     "type": "git",

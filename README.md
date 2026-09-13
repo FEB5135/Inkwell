@@ -45,21 +45,25 @@ denetiminde her iki yazım da kabul edilir, ama ton yanlışsa kart yanlış say
 
 ## Çalıştırma
 
-Tarayıcı güvenlik kuralları yüzünden `index.html` dosyasını doğrudan çift
-tıklayarak açmak yetmez (sözlük dosyası okunamaz, çevrimdışı kip çalışmaz).
-Küçük bir yerel sunucu gerekir:
+### Bilgisayarda
+
+`Inkwell.bat` dosyasına çift tıkla. Yerel sunucuyu başlatır ve uygulamayı
+tarayıcıda açar. Küçültülmüş bir konsol penceresi açık kalır; kapatınca
+sunucu durur.
+
+Terminalden:
 
 ```bash
-npx serve .
+npm start
 ```
 
-Sonra tarayıcıda `http://localhost:3000`.
+`index.html` dosyasını doğrudan çift tıklamak **çalışmaz**: tarayıcılar
+`file://` ile açılan sayfalara modül yüklemeye ve dosya okumaya izin vermez.
+Sunucu bu yüzden gerekli — sadece 127.0.0.1'i dinler, ağa açılmaz.
 
-Python tercih edersen:
-
-```bash
-python -m http.server 8000
-```
+Chrome'da adres çubuğundaki kur simgesiyle uygulama olarak da kurabilirsin;
+o zaman kendi penceresinde, sekmesiz açılır. Sunucunun yine de çalışıyor
+olması gerekir.
 
 ### Tablete kurmak
 
@@ -109,6 +113,11 @@ bunu önler.
 Her şey tarayıcının IndexedDB'sinde, cihazda tutulur. Sunucuya hiçbir şey
 gitmez, hesap yoktur.
 
+**Cihazlar ayrı.** Tabletteki APK ile bilgisayardaki tarayıcı sürümü aynı
+veriyi paylaşmaz; her birinin kendi havuzu ve kendi tekrar geçmişi olur.
+Şimdilik ikisini birbirine yaklaştırmanın yolu yedek dosyasını aktarmak.
+Gerçek eşitleme sıradaki işlerden.
+
 **Yedek al.** Ayarlar → Dışa aktar bir JSON dosyası verir. İçe aktarma
 birleştiricidir, silici değil: aynı kaydın iki sürümü varsa yeni olan kazanır.
 İki cihazın yedeklerini üst üste yüklemek veri kaybettirmez.
@@ -129,6 +138,7 @@ js/srs.js             aralıklı tekrar algoritması
 js/dict.js            sözlük araması
 js/pinyin.js          ton sayısı ↔ ton işareti dönüşümü
 data/cedict.tsv       gömülü sözlük (üretilmiş dosya)
+tools/serve.mjs       yerel statik sunucu (Inkwell.bat bunu çalıştırır)
 tools/build-dict.mjs  CC-CEDICT → data/cedict.tsv
 tools/make-icons.py   PWA ikonları
 tools/build-www.mjs   www/ çıktısı (Capacitor bunu paketler)

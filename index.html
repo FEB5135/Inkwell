@@ -128,8 +128,9 @@
       <input type="search" id="dict-q" class="input input--lg" placeholder="hao3 · hao · good · 好"
              autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       <p class="hint">
-        Pinyin, İngilizce anlam ya da karakterin kendisiyle arayabilirsin.
-        Çince klavye gerekmez.
+        <b>Enter</b>'a basınca en üstteki sonuç doğrudan eklenir —
+        <code>ni3</code> ⏎ <code>hao3</code> ⏎ diye aralıksız girebilirsin.
+        Başka bir karakter istiyorsan listeden seç.
       </p>
       <div class="dict-status" id="dict-status"></div>
       <ul class="results" id="dict-results"></ul>
@@ -138,12 +139,15 @@
     <!-- toplu -->
     <div class="addpane" id="addpane-bulk" hidden>
       <textarea id="bulk-text" class="textarea" rows="9" spellcheck="false"
-placeholder="好 hao3 iyi
-电话 dian4 hua4 telefon
-老师 lao3shi1 öğretmen"></textarea>
+placeholder="ni3 hao3
+dian4hua4
+lao3shi1 öğretmen
+好 hao3 iyi
+谢谢"></textarea>
       <p class="hint">
-        Her satıra bir kayıt: <b>karakter · pinyin · anlam</b>. Sadece karakter yapıştırırsan
-        pinyin ve anlamı sözlükten kendisi doldurur.
+        Her satıra bir kayıt. <b>Sadece pinyin yazman yeter</b> — karakter ve anlam
+        sözlükten gelir. Karakteri yapıştırırsan da olur. Kendi anlamını yazmak
+        istersen pinyin'den sonra ekle.
       </p>
       <div class="row row--end">
         <button class="btn btn--ghost" id="btn-bulk-preview">Önizle</button>

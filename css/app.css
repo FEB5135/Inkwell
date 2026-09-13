@@ -450,6 +450,20 @@ body::before {
 .result-flag { flex: none; font-size: .72rem; color: var(--ink-3); }
 .result-plus { flex: none; color: var(--seal); font-size: 1.3rem; font-weight: 300; }
 
+.alt-pick {
+  margin-top: 6px;
+  width: 100%;
+  max-width: 100%;
+  font: inherit;
+  font-size: .8rem;
+  color: var(--ink-2);
+  background: var(--paper-sunk);
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  padding: 5px 8px;
+}
+.alt-pick:focus { outline: none; border-color: var(--seal); }
+
 /* ═══════════ HAVUZ ═══════════ */
 .notes { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
 .note {

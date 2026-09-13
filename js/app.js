@@ -3,7 +3,7 @@
  */
 import * as db from './store.js';
 import * as dict from './dict.js';
-import { toMarks, answerMatches, matchesButTone, looksLikePinyin } from './pinyin.js';
+import { toMarks, toNumbers, answerMatches, matchesButTone, looksLikePinyin } from './pinyin.js';
 import { schedule, previewLabel, dueLabel, buildQueue, startOfToday, AGAIN, GOOD } from './srs.js';
 
 const $ = (id) => document.getElementById(id);
@@ -379,6 +379,15 @@ function bindAdd() {
   });
   q.addEventListener('focus', ensureDict);
 
+  // Enter: listedeki ilk sonucu doğrudan ekle ve bir sonrakini yazmaya hazırla.
+  // Böylece "ni3 <Enter> hao3 <Enter>" diye kesintisiz giriş yapılabilir.
+  q.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    clearTimeout(timer);
+    quickAdd();
+  });
+
   $('btn-new-deck').addEventListener('click', async () => {
     const name = prompt('Yeni deste adı (örn. "Bölüm 5")');
     if (!name?.trim()) return;
@@ -410,6 +419,43 @@ async function ensureDict() {
       'Sözlük yüklenemedi. Dosyadan açıyorsan yerel bir sunucu gerekiyor (README).';
     console.error(err);
   }
+}
+
+/**
+ * Arama kutusunda Enter'a basıldığında en üstteki sonucu ekler.
+ *
+ * Ton verilmişse (ni3) önce tam okunuş eşleşmesi aranır; sıradan arama
+ * "ni3" için önek eşleşmelerini de getirdiğinden, Enter'ın yanlışlıkla
+ * "ni3 hao3" gibi uzun bir kaydı eklemesini bu önler.
+ */
+async function quickAdd() {
+  const raw = $('dict-q').value.trim();
+  if (!raw) return;
+  await ensureDict();
+  if (!dict.isLoaded()) return;
+
+  const exact = dict.byPinyin(raw, 1);
+  const hit = exact[0] ?? dict.search(raw)[0];
+  if (!hit) { toast('Eşleşme yok'); return; }
+
+  const dup = await db.findByHanzi(hit.hanzi);
+  if (dup) { toast(`${hit.hanzi} zaten havuzda`); return; }
+
+  await db.addNote(
+    {
+      deckId: currentDeck(),
+      hanzi: hit.hanzi,
+      trad: hit.trad,
+      pinyin: hit.pinyin,
+      meaning: hit.meaning.replace(/;/g, '; '),
+    },
+    state.settings.types
+  );
+  toast(`${hit.hanzi} ${toMarks(hit.pinyin)} eklendi`);
+  $('dict-q').value = '';
+  $('dict-results').innerHTML = '';
+  $('dict-status').textContent = '';
+  await refresh();
 }
 
 async function runSearch() {
@@ -479,9 +525,14 @@ const currentDeck = () => state.settings.lastDeck && state.settings.lastDeck !==
 
 const CJK_RUN = /^[㐀-鿿豈-﫿]+/;
 
+/** Ton taşıyor mu — sayıyla (hao3) ya da işaretle (hǎo)? */
+function hasTone(token) {
+  return /[1-5]/.test(token) || /[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/i.test(token);
+}
+
 /** Bir tokenin kaç pinyin hecesi taşıdığını tahmin eder (0 = pinyin değil). */
 function syllableCount(token) {
-  const t = token.replace(/[.,;:!?()]/g, '');
+  const t = toNumbers(token.replace(/[.,;:!?()]/g, ''));
   if (!t) return 0;
   const tones = (t.match(/[1-5]/g) ?? []).length;
   if (tones > 0 && /^[a-zA-Zü:1-5]+$/.test(t)) return tones;
@@ -506,7 +557,26 @@ function parseBulkLine(raw) {
   }
 
   const m = CJK_RUN.exec(line);
-  if (!m) return { hanzi: '', pinyin: '', meaning: line, error: 'Çince karakter bulunamadı' };
+  if (!m) {
+    // Çince karakter yok: satırın başındaki pinyin hecelerini karaktere
+    // çevirmeyi dene. "ni3 hao3" ya da "ni3hao3 merhaba" gibi satırlar.
+    const tokens = line.split(/\s+/);
+    const syllables = [];
+    let i = 0;
+    while (i < tokens.length && hasTone(tokens[i]) && syllableCount(tokens[i])) {
+      syllables.push(tokens[i]);
+      i++;
+    }
+    if (!syllables.length) {
+      return { hanzi: '', pinyin: '', meaning: line, error: 'Karakter ya da tonlu pinyin yok' };
+    }
+    return {
+      hanzi: '',
+      pinyin: syllables.join(' '),
+      meaning: tokens.slice(i).join(' '),
+      fromPinyin: true,
+    };
+  }
 
   const hanzi = m[0];
   const rest = line.slice(hanzi.length).trim();
@@ -518,7 +588,7 @@ function parseBulkLine(raw) {
   let budget = hanzi.length;
   while (i < tokens.length && budget > 0) {
     const t = tokens[i];
-    if (!/[1-5]/.test(t)) break;
+    if (!hasTone(t)) break;
     const n = syllableCount(t);
     if (!n || n > budget) break;
     toned.push(t);
@@ -543,6 +613,16 @@ async function previewBulk() {
     const parsed = parseBulkLine(line);
     if (!parsed) continue;
 
+    if (parsed.fromPinyin) {
+      const hits = dict.byPinyin(parsed.pinyin);
+      if (hits.length) {
+        parsed.options = hits;
+        applyOption(parsed, 0);
+      } else {
+        parsed.error = 'Bu okunuşta kayıt yok';
+      }
+    }
+
     if (parsed.hanzi && (!parsed.pinyin || !parsed.meaning)) {
       const hit = dict.lookupExact(parsed.hanzi);
       if (hit) {
@@ -564,17 +644,60 @@ async function previewBulk() {
   $('btn-bulk-add').textContent = usable.length ? `${usable.length} kaydı ekle` : 'Ekle';
 
   $('bulk-preview').innerHTML = out
-    .map(
-      (p) => `<li><div class="result ${p.error || p.dupe ? 'is-dupe' : ''}">
+    .map((p, i) => {
+      const alt =
+        p.options?.length > 1
+          ? `<select class="alt-pick" data-alt="${i}" aria-label="Başka karakter seç">${p.options
+              .map(
+                (o, k) =>
+                  `<option value="${k}"${k === (p.chosen ?? 0) ? ' selected' : ''}>${escapeHtml(
+                    `${o.hanzi} · ${o.meaning.split(';')[0].slice(0, 28)}`
+                  )}</option>`
+              )
+              .join('')}</select>`
+          : '';
+      const flag = p.error
+        ? escapeHtml(p.error)
+        : p.dupe
+          ? 'havuzda'
+          : p.fromPinyin
+            ? 'okunuştan'
+            : p.filled
+              ? 'sözlükten'
+              : '';
+      return `<li><div class="result ${p.error || p.dupe ? 'is-dupe' : ''}">
         <span class="result-hanzi">${escapeHtml(p.hanzi || '—')}</span>
         <span class="result-body">
           <span class="result-pinyin">${escapeHtml(toMarks(p.pinyin))}</span>
           <span class="result-meaning">${escapeHtml(p.meaning || '')}</span>
+          ${alt}
         </span>
-        <span class="result-flag">${p.error ? escapeHtml(p.error) : p.dupe ? 'havuzda' : p.filled ? 'sözlükten' : ''}</span>
-      </div></li>`
-    )
+        <span class="result-flag">${flag}</span>
+      </div></li>`;
+    })
     .join('');
+
+  els('[data-alt]', $('bulk-preview')).forEach((sel) =>
+    sel.addEventListener('change', async () => {
+      const row = bulkParsed[Number(sel.dataset.alt)];
+      applyOption(row, Number(sel.value));
+      row.dupe = !!(await db.findByHanzi(row.hanzi));
+      previewBulk();
+    })
+  );
+}
+
+/** Pinyin'den çözülen bir satıra seçilen adayı uygular. */
+function applyOption(row, index) {
+  const hit = row.options[index];
+  row.chosen = index;
+  row.hanzi = hit.hanzi;
+  row.trad = hit.trad;
+  row.pinyin = hit.pinyin;
+  // Kullanıcı kendi anlamını yazdıysa ona dokunma.
+  if (!row.userMeaning) row.userMeaning = row.meaning || '';
+  row.meaning = row.userMeaning || hit.meaning.replace(/;/g, '; ');
+  row.error = null;
 }
 
 async function commitBulk() {

@@ -27,13 +27,18 @@ Yani 100 karakter girince 300 kart olur, tek tek kart hazırlamazsın.
 göstereceğine son performansına bakarak karar verir. Bildiğin karakter
 aylarca çıkmaz, takıldığın her gün çıkar.
 
-**Çince klavye gerekmez.** Üç ekleme yolu da İngilizce klavyeyle çalışır:
+**Çince klavye gerekmez.** Yalnız okunuşu yazarsın, karakter ve anlam kendi
+gelir:
 
-- **Sözlükten:** `hao3`, `hao` ya da `good` yazıp listeden seçersin —
-  karakter, pinyin ve anlam kendiliğinden dolar.
-- **Toplu yapıştır:** her satıra bir kayıt (`好 hao3 iyi`). Sadece karakteri
-  yapıştırsan da olur, gerisini sözlükten tamamlar.
+- **Sözlükten:** `ni3` yazıp Enter'a basarsın, 你 eklenir. `ni3` ⏎ `hao3` ⏎
+  diye aralıksız girebilirsin. Başka bir karakter istiyorsan listeden seçersin.
+- **Toplu yapıştır:** her satıra bir okunuş (`lao3shi1`). Ton işaretli yazım
+  (`lǎoshī`) da, karakterin kendisi de kabul edilir. Kendi anlamını yazmak
+  istersen okunuştan sonra eklersin.
 - **Elle:** üç alanı kendin doldurursun.
+
+Aynı okunuşta birden çok karakter varsa en yaygını seçilir; toplu önizlemede
+açılır listeden değiştirebilirsin.
 
 Ton işaretleri de aynı mantıkla: `hao3` yazarsın, `hǎo` görürsün. Cevap
 denetiminde her iki yazım da kabul edilir, ama ton yanlışsa kart yanlış sayılır.
@@ -167,4 +172,13 @@ node tools/build-dict.mjs
 
 ---
 
-Sözlük verisi [CC-CEDICT](https://cc-cedict.org/), CC BY-SA 4.0.
+## Veri kaynakları
+
+- Sözlük: [CC-CEDICT](https://cc-cedict.org/), CC BY-SA 4.0
+- Karakter sıklığı: Jun Da, *Modern Chinese Character Frequency List*
+  ([hanziDB.csv](https://github.com/ruddfawcett/hanziDB.csv) üzerinden)
+- Kelime seviyeleri: HSK 3.0 ([ivankra/hsk30](https://github.com/ivankra/hsk30))
+
+Sıklık ve HSK verisi yalnız arama sonuçlarının sıralaması için kullanılır:
+bir okunuşa karşılık gelen adaylar içinden öğrencinin muhtemelen aradığı
+sözcük öne çıksın diye.

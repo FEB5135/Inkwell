@@ -7,13 +7,14 @@
  *
  * Sözlük ilk arama denemesinde yüklenir — uygulamanın açılışını yavaşlatmaz.
  */
-import { toneless, toMarks } from './pinyin.js';
+import { toneless, toMarks, canonical } from './pinyin.js';
 
 const CJK = /[㐀-鿿豈-﫿]/;
 const LIMIT = 60;
 
 let rows = null;       // [simp, trad, pinyin, meaning] dizileri
 let pinyinKey = null;  // tonsuz, boşluksuz pinyin
+let tonedKey = null;   // tonlu, boşluksuz pinyin ("ni3hao3")
 let meaningKey = null; // küçük harfe indirilmiş anlam
 let loading = null;
 
@@ -32,6 +33,7 @@ export function load(onProgress) {
     const lines = text.split('\n');
     rows = new Array(lines.length);
     pinyinKey = new Array(lines.length);
+    tonedKey = new Array(lines.length);
     meaningKey = new Array(lines.length);
 
     let n = 0;
@@ -41,10 +43,11 @@ export function load(onProgress) {
       if (parts.length < 4) continue;
       rows[n] = parts;
       pinyinKey[n] = toneless(parts[2]);
+      tonedKey[n] = canonical(parts[2]);
       meaningKey[n] = parts[3].toLowerCase();
       n++;
     }
-    rows.length = pinyinKey.length = meaningKey.length = n;
+    rows.length = pinyinKey.length = tonedKey.length = meaningKey.length = n;
 
     onProgress?.(`${n.toLocaleString('tr')} kayıt hazır.`);
     return n;
@@ -118,6 +121,35 @@ export function search(query) {
     if (strong.length >= LIMIT) break;
   }
   return [...strong, ...weak].slice(0, LIMIT).map(pack);
+}
+
+/**
+ * Pinyin'den karaktere çözümleme.
+ *
+ * "ni3hao3" -> 你好. Aynı okunuşa sahip birden çok karakter olabileceği için
+ * (ni3: 你, 拟, 泥…) bir liste döner; ilk sıradaki en yaygın olandır, çünkü
+ * sözlük dosyası yaygınlığa göre sıralıdır.
+ *
+ * Ton verilmişse önce tonu da tutan kayıtlar aranır; hiç eşleşme yoksa ton
+ * yok sayılarak tekrar denenir.
+ */
+export function byPinyin(query, max = 8) {
+  if (!rows) return [];
+  const toned = canonical(query);
+  if (!toned) return [];
+
+  const exact = [];
+  for (let i = 0; i < rows.length && exact.length < max; i++) {
+    if (tonedKey[i] === toned) exact.push(pack(i));
+  }
+  if (exact.length) return exact;
+
+  const bare = toneless(query);
+  const loose = [];
+  for (let i = 0; i < rows.length && loose.length < max; i++) {
+    if (pinyinKey[i] === bare) loose.push(pack(i));
+  }
+  return loose;
 }
 
 /** Toplu yapıştırmada "sadece karakter verilmiş" satırları tamamlamak için. */

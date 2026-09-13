@@ -1,6 +1,6 @@
 # Inkwell
 
-<img src="icons/icon.svg" width="88" align="right" alt="">
+<img src="icons/icon-512.png" width="88" align="right" alt="">
 
 Kendi hanzi havuzunu kur, aralıklı tekrarla ezberle. Çevrimdışı çalışır, veri
 cihazdan çıkmaz.
@@ -192,7 +192,8 @@ data/strokes.txt      strok verisi (üretilmiş, depoda yok)
 data/cedict.tsv       gömülü sözlük (üretilmiş dosya)
 tools/serve.mjs       yerel statik sunucu (Inkwell.bat bunu çalıştırır)
 tools/build-dict.mjs  CC-CEDICT → data/cedict.tsv
-tools/make-logo.mjs   marka ve bütün ikon boyutları
+brand/icon-source.jpg kaynak marka görseli
+tools/make-logo.py    kaynaktan bütün ikon boyutları
 tools/build-strokes.mjs  hanzi-writer-data → data/strokes.txt
 tools/build-www.mjs   www/ çıktısı (Capacitor bunu paketler)
 tools/build-apk.mjs   imzalama + APK derlemesi
@@ -224,6 +225,21 @@ node tools/build-dict.mjs
   çıkış zamanlarının ayrılması
 
 ---
+
+## Marka
+
+İkondaki karakter 永 — son stroğu fırçanın altında bitiyor.
+
+永 hat yazısında **永字八法** olarak bilinen klasik alıştırma karakteri: sekiz
+temel strok türünün hepsini içerdiği için yüzyıllardır ilk yazılan karakter
+budur. Yazma pratiği yapan bir uygulama için doğru karakter. Anlamı da
+"sonsuz" (Japonca okunuşu *ei*).
+
+Bütün boyutlar tek kaynaktan üretiliyor:
+
+```bash
+npm run icons
+```
 
 ## Veri kaynakları
 

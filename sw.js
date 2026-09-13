@@ -26,8 +26,7 @@ const SHELL_FILES = [
   'js/syllables.js',
   'js/vendor/hanzi-writer.min.js',
   'manifest.webmanifest',
-  'icons/icon.svg',
-  'icons/mark.svg',
+  'icons/icon-192.png',
 ];
 
 self.addEventListener('install', (e) => {

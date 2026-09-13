@@ -354,7 +354,8 @@ export async function exportAll() {
  * üst üste yüklemek veri kaybettirmez.
  */
 export async function importAll(data) {
-  if (data?.app !== 'inkwell') throw new Error('Bu dosya bir Inkwell yedeği değil.');
+  // Arayüz çevirisini veri katmanına taşımamak için kod fırlatılıyor.
+  if (data?.app !== 'inkwell') throw new Error('notBackup');
   const stats = { decks: 0, notes: 0, cards: 0, reviews: 0 };
 
   const mergeInto = (storeName, rows, counter) =>

@@ -1307,7 +1307,9 @@ async function importBackup(e) {
     await refresh();
     toast(t('toast.merged', { n: stats.notes }));
   } catch (err) {
-    toast(err.message ?? t('toast.fileError'));
+    // Yedek olmayan dosyayı ayrı söylüyoruz: "okunamadı" demek, yanlış dosyayı
+    // seçtiğini fark etmeyi zorlaştırıyor.
+    toast(err?.message === 'notBackup' ? t('error.notBackup') : t('toast.fileError'));
   }
   e.target.value = '';
 }

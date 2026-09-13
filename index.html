@@ -252,7 +252,11 @@
         <button class="btn btn--ghost" id="btn-export" data-i18n="set.export">Dışa aktar</button>
         <button class="btn btn--ghost" id="btn-import" data-i18n="set.import">İçe aktar</button>
       </div>
-      <input type="file" id="import-file" accept="application/json" hidden>
+      <!-- accept="application/json" değil: Android'in dosya seçicisi .json'u
+           çoğu zaman octet-stream sayıp gizliyor, yedek seçilemez oluyordu.
+           Süzgeç yerine içeriğe bakılıyor; yedek olmayan dosya zaten
+           okunurken anlaşılıyor. -->
+      <input type="file" id="import-file" hidden>
       <p class="hint" id="backup-status"></p>
     </div>
 

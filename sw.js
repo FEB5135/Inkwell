@@ -21,8 +21,13 @@ const SHELL_FILES = [
   'js/srs.js',
   'js/dict.js',
   'js/pinyin.js',
+  'js/grade.js',
+  'js/strokes.js',
+  'js/syllables.js',
+  'js/vendor/hanzi-writer.min.js',
   'manifest.webmanifest',
   'icons/icon.svg',
+  'icons/mark.svg',
 ];
 
 self.addEventListener('install', (e) => {
@@ -49,8 +54,8 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(request.url);
   if (url.origin !== location.origin) return;
 
-  // Sözlük: bir kez indir, sonra hep önbellekten.
-  if (url.pathname.endsWith('/data/cedict.tsv')) {
+  // Sözlük ve strok verisi: bir kez indir, sonra hep önbellekten.
+  if (url.pathname.endsWith('/data/cedict.tsv') || url.pathname.endsWith('/data/strokes.txt')) {
     e.respondWith(
       caches.open(DATA).then(async (cache) => {
         const hit = await cache.match(request);

@@ -22,7 +22,7 @@
     <!-- oturum dışı: özet -->
     <div class="view" id="study-home">
       <header class="page-head">
-        <h1 class="wordmark">Inkwell</h1>
+        <h1 class="wordmark"><img src="icons/mark.svg" alt="" width="34" height="34">Inkwell</h1>
         <p class="subtitle" id="study-greeting">Bugünün tekrarı</p>
       </header>
 
@@ -45,6 +45,9 @@
         <label class="field-label" for="study-deck">Deste</label>
         <select id="study-deck" class="select"></select>
       </div>
+
+      <label class="field-label">Ne çalışacaksın</label>
+      <div class="modes" id="modes"></div>
 
       <button class="btn btn--primary btn--xl" id="btn-start">Çalışmaya başla</button>
 
@@ -75,8 +78,20 @@
                  autocorrect="off" autocapitalize="off" spellcheck="false"
                  placeholder="ni3 hao3" inputmode="latin" enterkeyhint="done">
           <p class="answer-hint" id="answer-hint">Ton için sayı kullan: <code>hao3</code> → hǎo</p>
-          <p class="answer-verdict" id="answer-verdict" hidden></p>
         </div>
+
+        <!-- kalemle yazma -->
+        <div class="write-box" id="write-box" hidden>
+          <div class="write-grid" id="write-grid"></div>
+          <p class="write-status" id="write-status">Karakteri strok sırasıyla çiz</p>
+          <div class="write-actions">
+            <button class="btn btn--ghost btn--sm" id="btn-write-hint">İpucu</button>
+            <button class="btn btn--ghost btn--sm" id="btn-write-give">Bilmiyorum</button>
+          </div>
+        </div>
+
+        <!-- değerlendirme (her kart türü için ortak) -->
+        <p class="answer-verdict" id="answer-verdict" hidden></p>
 
         <!-- arka yüz -->
         <div class="card-back" id="card-back" hidden></div>
@@ -202,6 +217,8 @@ lao3shi1 öğretmen
         <span><b>Anlam</b><i>hǎo → anlamını yaz</i></span></label>
       <label class="check"><input type="checkbox" id="opt-type-recall" checked>
         <span><b>Üretim</b><i>anlam → okunuşu yaz, karakteri hatırla</i></span></label>
+      <label class="check"><input type="checkbox" id="opt-type-write">
+        <span><b>Yazma</b><i>anlam → karakteri kalemle çiz (dokunmatik ekran gerekir)</i></span></label>
     </div>
 
     <div class="setting-group">
@@ -266,6 +283,7 @@ lao3shi1 öğretmen
 
 <div class="toast" id="toast" hidden></div>
 
+<script src="js/vendor/hanzi-writer.min.js"></script>
 <script type="module" src="js/app.js"></script>
 </body>
 </html>

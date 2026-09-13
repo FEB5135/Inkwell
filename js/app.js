@@ -6,6 +6,7 @@ import * as dict from './dict.js';
 import { toMarks, toNumbers, answerMatches, matchesButTone, looksLikePinyin } from './pinyin.js';
 import { schedule, previewLabel, dueLabel, buildQueue, startOfToday, AGAIN, GOOD } from './srs.js';
 import { comparePinyin, compareMeaning, suggestGrade, VERDICT_TEXT } from './grade.js';
+import * as strokes from './strokes.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (sel, root = document) => root.querySelector(sel);
@@ -21,10 +22,11 @@ const els = (sel, root = document) => [...root.querySelectorAll(sel)];
  * bozulmasın diye gösterimi duruyor.
  */
 const TYPES = {
-  pinyin:  { label: 'Okunuş', answer: 'pinyin' },
-  meaning: { label: 'Anlam',  answer: 'meaning' },
-  recall:  { label: 'Üretim', answer: 'pinyin' },
-  read:    { label: 'Tanıma', answer: null },
+  pinyin:  { label: 'Okunuş', answer: 'pinyin',  mode: 'Okunuş' },
+  meaning: { label: 'Anlam',  answer: 'meaning', mode: 'Anlam' },
+  recall:  { label: 'Üretim', answer: 'pinyin',  mode: 'Üretim' },
+  write:   { label: 'Yazma',  answer: 'write',   mode: 'Yazma' },
+  read:    { label: 'Tanıma', answer: null,      mode: 'Tanıma' },
 };
 const TYPE_LABEL = Object.fromEntries(Object.entries(TYPES).map(([k, v]) => [k, v.label]));
 
@@ -53,6 +55,7 @@ async function init() {
   bindAdd();
   bindBrowse();
   bindSettings();
+  bindWrite();
   bindKeys();
 
   await refresh();
@@ -64,6 +67,7 @@ async function refresh() {
   const notes = await db.allNotes();
   state.notes = new Map(notes.map((n) => [n.id, n]));
   fillDeckSelects();
+  renderModes();
   renderStudyHome();
   renderBrowse();
   renderDeckList();
@@ -113,14 +117,62 @@ function bindStudy() {
 }
 
 /** Seçili destenin kartları (tümü seçiliyse hepsi). */
+/**
+ * Sıraya girecek kartlar: açık türler, seçili deste ve seçili kategori.
+ *
+ * Kategori ayrı tutuluyor çünkü çalışma biçimleri birbirinden farklı işler:
+ * karakteri tanımaya çalışmakla kalemle yazmak aynı oturumda karışınca
+ * ikisi de yarım kalıyor. "Karışık" isteyen için o seçenek de duruyor.
+ */
 function scopedCards() {
   const deckId = state.settings.lastDeck;
+  const mode = state.settings.mode ?? 'all';
   const enabled = new Set(state.settings.types);
   return state.cards.filter((c) => {
     if (!enabled.has(c.type)) return false;
+    if (mode !== 'all' && c.type !== mode) return false;
     if (!deckId || deckId === 'all') return true;
     return state.notes.get(c.noteId)?.deckId === deckId;
   });
+}
+
+/** Kategori düğmeleri; her birinin yanında o kategoride bekleyen kart sayısı. */
+function renderModes() {
+  const now = Date.now();
+  const deckId = state.settings.lastDeck;
+  const enabled = state.settings.types;
+  const current = state.settings.mode ?? 'all';
+
+  const inDeck = (c) =>
+    !deckId || deckId === 'all' || state.notes.get(c.noteId)?.deckId === deckId;
+
+  const countFor = (type) =>
+    state.cards.filter(
+      (c) =>
+        inDeck(c) &&
+        (type === 'all' ? enabled.includes(c.type) : c.type === type) &&
+        (c.state === 'new' || c.due <= now)
+    ).length;
+
+  const options = [['all', 'Karışık'], ...enabled.map((t) => [t, TYPES[t].mode])];
+
+  $('modes').innerHTML = options
+    .map(([value, label]) => {
+      const n = countFor(value);
+      return `<button class="mode ${value === current ? 'is-active' : ''}" data-mode="${value}">
+        ${escapeHtml(label)}${n ? `<em>${n}</em>` : ''}
+      </button>`;
+    })
+    .join('');
+
+  els('[data-mode]').forEach((btn) =>
+    btn.addEventListener('click', async () => {
+      state.settings.mode = btn.dataset.mode;
+      await db.setSetting('mode', btn.dataset.mode);
+      renderModes();
+      renderStudyHome();
+    })
+  );
 }
 
 async function seenNewToday() {
@@ -185,6 +237,7 @@ async function startSession() {
 function endSession(silent = false) {
   const s = state.session;
   state.session = null;
+  teardownWriters();
   $('study-session').hidden = true;
   if (silent) {
     $('study-home').hidden = false;
@@ -222,9 +275,15 @@ function nextCard() {
   $('answer-verdict').hidden = true;
 
   const answer = TYPES[card.type]?.answer ?? null;
-  $('answer-box').hidden = !answer;
+  $('answer-box').hidden = answer !== 'pinyin' && answer !== 'meaning';
+  $('write-box').hidden = answer !== 'write';
+  el('.write-actions').hidden = false;
+  teardownWriters();
 
-  if (card.type === 'meaning') {
+  if (card.type === 'write') {
+    front.innerHTML = `<p class="prompt-meaning">${escapeHtml(note.meaning)}</p>
+      <p class="prompt-sub">${escapeHtml(toMarks(note.pinyin))}</p>`;
+  } else if (card.type === 'meaning') {
     // Yalnız okunuş gösterilir: ses ile anlam arasındaki bağı sınar,
     // karakteri görmek cevabı ele vermesin.
     front.innerHTML = `<p class="prompt-pinyin">${escapeHtml(toMarks(note.pinyin))}</p>
@@ -234,6 +293,12 @@ function nextCard() {
       <p class="prompt-sub">Okunuşunu yaz, karakteri de aklında tut</p>`;
   } else {
     front.innerHTML = `<p class="hanzi">${escapeHtml(note.hanzi)}</p>`;
+  }
+
+  if (answer === 'write') {
+    $('btn-reveal').hidden = true;
+    setupWriters(note);
+    return;
   }
 
   if (answer) {
@@ -399,6 +464,153 @@ function bindKeys() {
       e.preventDefault();
       grade(Number(e.key));
     }
+  });
+}
+
+/* ═══════════════════ kalemle yazma ═══════════════════ */
+
+let writers = [];
+
+function teardownWriters() {
+  for (const w of writers) {
+    try { w.cancelQuiz?.(); } catch {}
+  }
+  writers = [];
+  $('write-grid').innerHTML = '';
+}
+
+const cssVar = (name) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+/**
+ * Yazma kartını kurar.
+ *
+ * Karakterin taslağı gösterilmez: gösterilse bu bir üzerinden geçme alıştırması
+ * olurdu, oysa sınanan şey karakteri hatırlamak. Üç hatadan sonra o strok
+ * ipucu olarak belirir, yoksa kart kilitlenirdi.
+ *
+ * Çok karakterli sözcüklerde karakterler sırayla çalışılır; hatalar toplanır.
+ */
+async function setupWriters(note) {
+  const status = $('write-status');
+  const grid = $('write-grid');
+
+  if (!strokes.isLoaded()) {
+    status.textContent = 'Strok verisi yükleniyor…';
+    try {
+      await strokes.load();
+    } catch {
+      return writeUnavailable('Strok verisi yüklenemedi.');
+    }
+  }
+
+  // Oturum bu arada değişmiş olabilir.
+  const s = state.session;
+  if (!s || s.current?.noteId !== note.id) return;
+
+  const chars = [...note.hanzi];
+  if (!chars.every((ch) => strokes.has(ch))) {
+    return writeUnavailable('Bu karakterin strok verisi yok — kendin değerlendir.');
+  }
+
+  status.textContent = 'Karakteri strok sırasıyla çiz';
+  grid.innerHTML = chars.map(() => '<div class="write-cell"></div>').join('');
+
+  const cells = els('.write-cell', grid);
+  const size = Math.min(240, Math.floor(grid.clientWidth / chars.length) - 8);
+
+  s.writeMistakes = 0;
+  s.writeIndex = 0;
+
+  writers = cells.map((cell, i) =>
+    HanziWriter.create(cell, chars[i], {
+      width: size,
+      height: size,
+      padding: 6,
+      showCharacter: false,
+      showOutline: false,
+      showHintAfterMisses: 3,
+      strokeColor: cssVar('--ink'),
+      drawingColor: cssVar('--seal'),
+      outlineColor: cssVar('--rule-2'),
+      highlightColor: cssVar('--amber'),
+      drawingWidth: 22,
+      charDataLoader: (char, onComplete) => onComplete(strokes.charData(char)),
+    })
+  );
+
+  startQuizAt(0, chars);
+}
+
+function startQuizAt(i, chars) {
+  const s = state.session;
+  if (!s || i >= writers.length) return;
+
+  s.writeIndex = i;
+  els('.write-cell').forEach((c, k) => c.classList.toggle('is-active', k === i));
+  if (chars.length > 1) {
+    $('write-status').textContent = `${i + 1}. karakter · ${chars.length} taneden`;
+  }
+
+  writers[i].quiz({
+    onMistake: () => {
+      s.writeMistakes = (s.writeMistakes ?? 0) + 1;
+    },
+    onComplete: () => {
+      if (i + 1 < writers.length) startQuizAt(i + 1, chars);
+      else finishWrite(s.writeMistakes ?? 0);
+    },
+  });
+}
+
+/** Hata sayısından not önerisi. */
+function finishWrite(mistakes) {
+  const s = state.session;
+  if (!s) return;
+  const level = mistakes === 0 ? 'exact' : mistakes <= 2 ? 'near' : 'wrong';
+
+  const verdict = $('answer-verdict');
+  verdict.hidden = false;
+  verdict.className =
+    'answer-verdict ' + (level === 'exact' ? 'is-ok' : level === 'wrong' ? 'is-bad' : 'is-close');
+  verdict.innerHTML =
+    level === 'exact'
+      ? 'Hatasız'
+      : `${VERDICT_TEXT[level]}<div class="verdict-detail"><small>${mistakes} strok hatası</small></div>`;
+
+  $('write-status').textContent = '';
+  el('.write-actions').hidden = true;
+  els('.write-cell').forEach((c) => c.classList.remove('is-active'));
+  s.autoGrade = suggestGrade(level);
+  reveal(state.notes.get(s.current.noteId));
+}
+
+/** Strok verisi yoksa kart elle değerlendirmeye düşer. */
+function writeUnavailable(message) {
+  $('write-status').textContent = message;
+  $('write-grid').innerHTML = '';
+  $('btn-reveal').hidden = false;
+  $('btn-reveal').textContent = 'Göster';
+}
+
+function bindWrite() {
+  $('btn-write-hint').addEventListener('click', () => {
+    const s = state.session;
+    const w = writers[s?.writeIndex ?? 0];
+    if (!w) return;
+    // İpucu bedava değil: bir hata sayılır.
+    s.writeMistakes = (s.writeMistakes ?? 0) + 1;
+    w.highlightStroke?.(w._quiz?._currentStrokeIndex ?? 0);
+  });
+
+  $('btn-write-give').addEventListener('click', () => {
+    const s = state.session;
+    if (!s || !writers.length) return;
+    for (const w of writers) {
+      try { w.cancelQuiz(); } catch {}
+      w.showCharacter();
+    }
+    finishWrite(99);
   });
 }
 
@@ -858,6 +1070,7 @@ function bindSettings() {
   $('opt-type-pinyin').checked = s.types.includes('pinyin');
   $('opt-type-meaning').checked = s.types.includes('meaning');
   $('opt-type-recall').checked = s.types.includes('recall');
+  $('opt-type-write').checked = s.types.includes('write');
   $('opt-new').value = s.newPerDay;
   $('opt-max').value = s.maxReviews;
   $('opt-tts').checked = s.tts;
@@ -867,14 +1080,20 @@ function bindSettings() {
     if ($('opt-type-pinyin').checked) types.push('pinyin');
     if ($('opt-type-meaning').checked) types.push('meaning');
     if ($('opt-type-recall').checked) types.push('recall');
+    if ($('opt-type-write').checked) types.push('write');
     if (!types.length) { toast('En az bir tür açık kalmalı'); $('opt-type-pinyin').checked = true; return; }
     state.settings.types = types;
     await db.setSetting('types', types);
     const added = await db.backfillCards(types);
     if (added) toast(`${added} yeni kart üretildi`);
+    // Kapatılan türdeki kategori seçiliyse karışığa dön.
+    if (state.settings.mode && state.settings.mode !== 'all' && !types.includes(state.settings.mode)) {
+      state.settings.mode = 'all';
+      await db.setSetting('mode', 'all');
+    }
     await refresh();
   };
-  ['opt-type-pinyin', 'opt-type-meaning', 'opt-type-recall'].forEach((id) =>
+  ['opt-type-pinyin', 'opt-type-meaning', 'opt-type-recall', 'opt-type-write'].forEach((id) =>
     $(id).addEventListener('change', syncTypes)
   );
 

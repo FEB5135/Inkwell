@@ -1,5 +1,7 @@
 # Inkwell
 
+<img src="icons/icon.svg" width="88" align="right" alt="">
+
 Kendi hanzi havuzunu kur, aralıklı tekrarla ezberle. Çevrimdışı çalışır, veri
 cihazdan çıkmaz.
 
@@ -20,6 +22,11 @@ gerektirmez.
 | Okunuş | 老师 | `lao3shi1` | karakter → ses |
 | Anlam | lǎoshī | `teacher` | ses → anlam |
 | Üretim | teacher | `lao3shi1` + karakteri hatırla | anlam → üretim |
+| Yazma | teacher · lǎoshī | karakteri kalemle çizersin | elle üretim |
+
+**Kategoriler ayrı çalışılır.** Çalış ekranındaki seçiciyle yalnız bir türü
+çalışabilirsin. Karakteri tanımaya çalışmakla kalemle yazmak farklı işler;
+aynı oturumda karışınca ikisi de yarım kalıyor. "Karışık" seçeneği de duruyor.
 
 Yani 100 karakter girince 300 kart olur, tek tek kart hazırlamazsın.
 
@@ -42,7 +49,15 @@ doğru sayılır ("a teacher" ↔ "teacher; instructor").
 
 Karakteri klavyeyle yazdıramadığımız için (Çince klavye gerekir) Üretim
 kartında karakterin doğrulaması sende: hatırlamadıysan düşük not verirsin.
-Kalemle yazma modu gelince o kısım da ölçülebilir olacak.
+
+**Yazma kartı** bu boşluğu dolduruyor. Karakteri 米字格 kılavuz karesine
+strok strok çizersin; her strok beklenen yolla karşılaştırılır, yanlış sırada
+çizersen kabul edilmez, üç hatadan sonra o strok ipucu olarak belirir.
+Not hata sayısından gelir. Dokunmatik ekran ve kalem gerektirdiği için
+varsayılan olarak kapalı — tablette Ayarlar'dan açarsın.
+
+Strok verisi 9.574 karakteri kapsıyor. Kapsamayan bir karakterde kart elle
+değerlendirmeye düşer.
 
 **Aralıklı tekrar.** SM-2 türevi bir algoritma her kartı ne zaman tekrar
 göstereceğine son performansına bakarak karar verir. Bildiğin karakter
@@ -165,15 +180,25 @@ js/dict.js            sözlük araması
 js/pinyin.js          ton dönüşümü, hece ayırma
 js/grade.js           cevabın doğruya yakınlığı
 js/syllables.js       geçerli heceler (üretilmiş dosya)
+js/strokes.js         strok verisi yükleme ve çözme
+js/vendor/            hanzi-writer (MIT)
+data/strokes.txt      strok verisi (üretilmiş, depoda yok)
 data/cedict.tsv       gömülü sözlük (üretilmiş dosya)
 tools/serve.mjs       yerel statik sunucu (Inkwell.bat bunu çalıştırır)
 tools/build-dict.mjs  CC-CEDICT → data/cedict.tsv
-tools/make-icons.py   PWA ikonları
+tools/make-logo.mjs   marka ve bütün ikon boyutları
+tools/build-strokes.mjs  hanzi-writer-data → data/strokes.txt
 tools/build-www.mjs   www/ çıktısı (Capacitor bunu paketler)
 tools/build-apk.mjs   imzalama + APK derlemesi
-tools/make-android-assets.py  Android ikonları ve açılış görseli
 android/              Capacitor'ın ürettiği Android projesi
 sw.js                 çevrimdışı önbellek (yalnız web sürümünde)
+```
+
+Strok verisi depoda durmaz, npm paketinden üretilir:
+
+```bash
+npm install
+npm run strokes
 ```
 
 Sözlüğü tazelemek için:
@@ -188,7 +213,6 @@ node tools/build-dict.mjs
 
 ## Sırada ne var
 
-- Kalemle yazma pratiği (strok sırası denetimiyle)
 - Cihazlar arası eşitleme
 - Benzer görünen karakterlerin (未/末, 己/已) birbirini bozmaması için
   çıkış zamanlarının ayrılması
@@ -201,6 +225,8 @@ node tools/build-dict.mjs
 - Karakter sıklığı: Jun Da, *Modern Chinese Character Frequency List*
   ([hanziDB.csv](https://github.com/ruddfawcett/hanziDB.csv) üzerinden)
 - Kelime seviyeleri: HSK 3.0 ([ivankra/hsk30](https://github.com/ivankra/hsk30))
+- Strok verisi ve çizim: [hanzi-writer](https://hanziwriter.org/) (MIT),
+  veri tabanı [Make Me a Hanzi](https://github.com/skishore/makemeahanzi)
 
 Sıklık ve HSK verisi yalnız arama sonuçlarının sıralaması için kullanılır:
 bir okunuşa karşılık gelen adaylar içinden öğrencinin muhtemelen aradığı

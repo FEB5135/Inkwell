@@ -19,3 +19,9 @@ android/app/build/
 android/build/
 android/.gradle/
 android/capacitor-cordova-android-plugins/
+
+# Strok verisi npm paketinden üretilir (npm run strokes) ve 25 MB.
+# package-lock.json sürümü sabitlediği için birebir yeniden üretilebilir;
+# depoya koymanın anlamı yok. cedict.tsv ise dış bir adresten indiriliyor
+# ve zamanla değişiyor, o yüzden o depoda duruyor.
+data/strokes.txt

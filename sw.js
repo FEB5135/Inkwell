@@ -22,6 +22,7 @@ const SHELL_FILES = [
   'js/dict.js',
   'js/pinyin.js',
   'js/grade.js',
+  'js/i18n.js',
   'js/strokes.js',
   'js/syllables.js',
   'js/vendor/hanzi-writer.min.js',

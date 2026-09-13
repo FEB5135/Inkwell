@@ -90,6 +90,13 @@ denetiminde her iki yazım da kabul edilir, ama ton yanlışsa kart yanlış say
 
 ---
 
+## Dil
+
+Arayüz Türkçe ve İngilizce. İlk açılışta cihazın diline bakılır, Ayarlar'dan
+değiştirilir. Metinler `js/i18n.js`'te; sabit olanlar `data-i18n` işaretiyle,
+dinamikler `t()` ile geliyor. Kartların içeriği (senin yazdığın anlamlar)
+elbette çevrilmiyor.
+
 ## Çalıştırma
 
 ### Bilgisayarda
@@ -183,6 +190,7 @@ js/app.js             ekranlar, oturum akışı
 js/store.js           IndexedDB katmanı, yedekleme
 js/srs.js             aralıklı tekrar algoritması
 js/dict.js            sözlük araması
+js/i18n.js            arayüz dili (tr/en)
 js/pinyin.js          ton dönüşümü, hece ayırma
 js/grade.js           cevabın doğruya yakınlığı
 js/syllables.js       geçerli heceler (üretilmiş dosya)

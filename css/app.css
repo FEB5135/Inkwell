@@ -188,6 +188,15 @@ body::before {
   background-repeat: no-repeat;
 }
 .deck-picker { margin-bottom: 18px; }
+.deck-compact {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: .88rem;
+  color: var(--ink-3);
+}
+.deck-compact b { color: var(--ink-2); font-weight: 600; }
 .row { display: flex; gap: 10px; align-items: center; }
 .row > .select, .row > .input { flex: 1; min-width: 0; }
 .row--end { justify-content: flex-end; margin-top: 12px; }

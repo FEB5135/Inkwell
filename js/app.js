@@ -5,7 +5,8 @@ import * as db from './store.js';
 import * as dict from './dict.js';
 import { toMarks, toNumbers, answerMatches, matchesButTone, looksLikePinyin } from './pinyin.js';
 import { schedule, dueLabel, buildQueue, startOfToday, AGAIN, GOOD } from './srs.js';
-import { comparePinyin, compareMeaning, suggestGrade, VERDICT_TEXT } from './grade.js';
+import { comparePinyin, compareMeaning, suggestGrade } from './grade.js';
+import { t, setLang, getLang, detect, applyDom, LANGUAGES } from './i18n.js';
 import * as strokes from './strokes.js';
 
 const $ = (id) => document.getElementById(id);
@@ -22,13 +23,13 @@ const els = (sel, root = document) => [...root.querySelectorAll(sel)];
  * bozulmasın diye gösterimi duruyor.
  */
 const TYPES = {
-  pinyin:  { label: 'Okunuş', answer: 'pinyin',  mode: 'Okunuş' },
-  meaning: { label: 'Anlam',  answer: 'meaning', mode: 'Anlam' },
-  recall:  { label: 'Üretim', answer: 'pinyin',  mode: 'Üretim' },
-  write:   { label: 'Yazma',  answer: 'write',   mode: 'Yazma' },
-  read:    { label: 'Tanıma', answer: null,      mode: 'Tanıma' },
+  pinyin:  { answer: 'pinyin' },
+  meaning: { answer: 'meaning' },
+  recall:  { answer: 'pinyin' },
+  write:   { answer: 'write' },
+  read:    { answer: null },
 };
-const TYPE_LABEL = Object.fromEntries(Object.entries(TYPES).map(([k, v]) => [k, v.label]));
+const typeLabel = (type) => t(`type.${type}`);
 
 const state = {
   settings: null,
@@ -43,6 +44,7 @@ const state = {
 
 async function init() {
   state.settings = await db.getSettings();
+  setLang(state.settings.lang ?? detect());
 
   state.decks = await db.allDecks();
   if (!state.decks.length) {
@@ -66,6 +68,8 @@ async function refresh() {
   state.cards = await db.allCards();
   const notes = await db.allNotes();
   state.notes = new Map(notes.map((n) => [n.id, n]));
+  applyDom();
+  renderColophon();
   fillDeckSelects();
   renderModes();
   renderStudyHome();
@@ -152,7 +156,7 @@ function renderModes() {
         (c.state === 'new' || c.due <= now)
     ).length;
 
-  const options = [['all', 'Karışık'], ...enabled.map((t) => [t, TYPES[t].mode])];
+  const options = [['all', t('mode.all')], ...enabled.map((type) => [type, typeLabel(type)])];
 
   $('modes').innerHTML = options
     .map(([value, label]) => {
@@ -185,18 +189,21 @@ async function renderStudyHome() {
 
   $('btn-start').disabled = cards.length === 0;
   $('btn-start').textContent = cards.length
-    ? `Çalışmaya başla · ${cards.length}`
-    : 'Bu kategoride kart yok';
+    ? t('study.startN', { n: cards.length })
+    : t('study.noCards');
   $('study-empty').hidden = cards.length > 0;
+  $('study-empty').innerHTML = t('study.emptyNote', {
+    link: `<button class="linkish" data-goto="add">${t('study.emptyLink')}</button>`,
+  });
 
   const badge = $('tab-badge');
   badge.hidden = cards.length === 0;
   badge.textContent = cards.length > 99 ? '99+' : cards.length;
 
   $('mini-stats').innerHTML = cards.length
-    ? `<div>Bu kategoride <b>${notes}</b> kayıt, <b>${cards.length}</b> kart.</div>
-       <div><b>${mature}</b> kart yerleşmiş sayılıyor (3 haftadan uzun aralık).</div>`
-    : `<div>Havuz boş. Başlamak için birkaç karakter ekle.</div>`;
+    ? `<div>${t('study.poolInfo', { notes, cards: cards.length })}</div>
+       <div>${t('study.matureInfo', { n: mature })}</div>`
+    : `<div>${t('study.empty')}</div>`;
 }
 
 async function startSession() {
@@ -220,8 +227,7 @@ function endSession(silent = false) {
     renderStudyHome();
     return;
   }
-  $('done-summary').textContent =
-    `${s.done} kart çalışıldı · ${s.correct} doğru.`;
+  $('done-summary').textContent = t('study.summary', { done: s.done, correct: s.correct });
   $('study-done').hidden = false;
   refresh();
 }
@@ -241,7 +247,7 @@ function nextCard() {
 
   $('progress-fill').style.width = `${(s.done / s.total) * 100}%`;
   $('session-left').textContent = s.queue.length;
-  $('card-type').textContent = TYPE_LABEL[card.type];
+  $('card-type').textContent = typeLabel(card.type);
 
   const front = $('card-front');
   const back = $('card-back');
@@ -263,10 +269,10 @@ function nextCard() {
     // Yalnız okunuş gösterilir: ses ile anlam arasındaki bağı sınar,
     // karakteri görmek cevabı ele vermesin.
     front.innerHTML = `<p class="prompt-pinyin">${escapeHtml(toMarks(note.pinyin))}</p>
-      <p class="prompt-sub">Anlamı ne?</p>`;
+      <p class="prompt-sub">${t('card.whichMeaning')}</p>`;
   } else if (card.type === 'recall') {
     front.innerHTML = `<p class="prompt-meaning">${escapeHtml(note.meaning)}</p>
-      <p class="prompt-sub">Okunuşunu yaz, karakteri de aklında tut</p>`;
+      <p class="prompt-sub">${t('card.recallPrompt')}</p>`;
   } else {
     front.innerHTML = `<p class="hanzi">${escapeHtml(note.hanzi)}</p>`;
   }
@@ -284,16 +290,16 @@ function nextCard() {
     if (answer === 'pinyin') {
       input.placeholder = 'ni3 hao3';
       input.className = 'answer-input answer-input--pinyin';
-      $('answer-hint').innerHTML = 'Ton için sayı kullan: <code>hao3</code> → hǎo';
+      $('answer-hint').innerHTML = t('card.tonehint');
     } else {
-      input.placeholder = 'anlamı yaz';
+      input.placeholder = t('card.meaningPh');
       input.className = 'answer-input answer-input--text';
-      $('answer-hint').textContent = 'Kendi sözcüklerinle yazabilirsin.';
+      $('answer-hint').textContent = t('card.meaninghint');
     }
-    $('btn-reveal').textContent = 'Kontrol et';
+    $('btn-reveal').textContent = t('study.check');
     setTimeout(() => input.focus(), 30);
   } else {
-    $('btn-reveal').textContent = 'Göster';
+    $('btn-reveal').textContent = t('study.reveal');
   }
 }
 
@@ -350,10 +356,10 @@ function renderVerdict(result, given, expected) {
       )
       .join('');
   } else if (result.level !== 'exact') {
-    detail = `<small>yazdığın: ${escapeHtml(given)}</small>`;
+    detail = `<small>${t('verdict.youWrote', { x: escapeHtml(given) })}</small>`;
   }
 
-  verdict.innerHTML = `${VERDICT_TEXT[result.level]}${detail ? `<div class="verdict-detail">${detail}</div>` : ''}`;
+  verdict.innerHTML = `${t(`verdict.${result.level}`)}${detail ? `<div class="verdict-detail">${detail}</div>` : ''}`;
 }
 
 function reveal(note) {
@@ -370,7 +376,7 @@ function reveal(note) {
     // hatırlamadıysan okunuşu bilsen de düşük not vermelisin.
     html = `<p class="hanzi">${escapeHtml(note.hanzi)}</p>
             <p class="back-pinyin">${escapeHtml(pinyin)}</p>
-            <p class="back-note">Karakteri de hatırladın mı? Hatırlamadıysan Zor ya da Tekrar ver.</p>`;
+            <p class="back-note">${t('card.recallNote')}</p>`;
   } else if (card.type === 'meaning') {
     html = `<p class="hanzi">${escapeHtml(note.hanzi)}</p>
             <p class="back-meaning">${escapeHtml(note.meaning)}</p>`;
@@ -379,7 +385,7 @@ function reveal(note) {
             <p class="back-meaning">${escapeHtml(note.meaning)}</p>`;
   }
   if (note.trad && note.trad !== note.hanzi) {
-    html += `<p class="back-extra">geleneksel: ${escapeHtml(note.trad)}</p>`;
+    html += `<p class="back-extra">${t('card.traditional', { x: escapeHtml(note.trad) })}</p>`;
   }
   back.innerHTML = html;
   back.hidden = false;
@@ -468,11 +474,11 @@ async function setupWriters(note) {
   const grid = $('write-grid');
 
   if (!strokes.isLoaded()) {
-    status.textContent = 'Strok verisi yükleniyor…';
+    status.textContent = t('write.loading');
     try {
       await strokes.load();
     } catch {
-      return writeUnavailable('Strok verisi yüklenemedi.');
+      return writeUnavailable(t('write.loadFail'));
     }
   }
 
@@ -482,10 +488,10 @@ async function setupWriters(note) {
 
   const chars = [...note.hanzi];
   if (!chars.every((ch) => strokes.has(ch))) {
-    return writeUnavailable('Bu karakterin strok verisi yok — kendin değerlendir.');
+    return writeUnavailable(t('write.noData'));
   }
 
-  status.textContent = 'Karakteri strok sırasıyla çiz';
+  status.textContent = t('write.status');
   grid.innerHTML = chars.map(() => '<div class="write-cell"></div>').join('');
 
   const cells = els('.write-cell', grid);
@@ -521,7 +527,7 @@ function startQuizAt(i, chars) {
   s.writeIndex = i;
   els('.write-cell').forEach((c, k) => c.classList.toggle('is-active', k === i));
   if (chars.length > 1) {
-    $('write-status').textContent = `${i + 1}. karakter · ${chars.length} taneden`;
+    $('write-status').textContent = t('write.progress', { i: i + 1, n: chars.length });
   }
 
   writers[i].quiz({
@@ -547,8 +553,8 @@ function finishWrite(mistakes) {
     'answer-verdict ' + (level === 'exact' ? 'is-ok' : level === 'wrong' ? 'is-bad' : 'is-close');
   verdict.innerHTML =
     level === 'exact'
-      ? 'Hatasız'
-      : `${VERDICT_TEXT[level]}<div class="verdict-detail"><small>${mistakes} strok hatası</small></div>`;
+      ? t('write.flawless')
+      : `${t(`verdict.${level}`)}<div class="verdict-detail"><small>${t('write.mistakes', { n: mistakes })}</small></div>`;
 
   s.wasCorrect = level === 'exact';
   $('write-status').textContent = '';
@@ -563,7 +569,7 @@ function writeUnavailable(message) {
   $('write-status').textContent = message;
   $('write-grid').innerHTML = '';
   $('btn-reveal').hidden = false;
-  $('btn-reveal').textContent = 'Göster';
+  $('btn-reveal').textContent = t('study.reveal');
 }
 
 function bindWrite() {
@@ -635,16 +641,18 @@ function bindAdd() {
     quickAdd();
   });
 
-  $('btn-new-deck').addEventListener('click', async () => {
-    const name = prompt('Yeni deste adı (örn. "Bölüm 5")');
+  const newDeck = async () => {
+    const name = prompt(t('prompt.newDeck'));
     if (!name?.trim()) return;
     const deck = await db.addDeck(name.trim());
     state.decks = await db.allDecks();
     state.settings.lastDeck = deck.id;
     await db.setSetting('lastDeck', deck.id);
     fillDeckSelects();
-    toast(`"${deck.name}" oluşturuldu`);
-  });
+    toast(t('toast.deckCreated', { x: deck.name }));
+  };
+  $('btn-new-deck').addEventListener('click', newDeck);
+  $('btn-new-deck-compact').addEventListener('click', newDeck);
 
   $('add-deck').addEventListener('change', (e) => {
     state.settings.lastDeck = e.target.value;
@@ -663,7 +671,7 @@ async function ensureDict() {
     await dict.load((msg) => (status.textContent = msg));
   } catch (err) {
     status.textContent =
-      'Sözlük yüklenemedi. Dosyadan açıyorsan yerel bir sunucu gerekiyor (README).';
+      t('add.dictFail');
     console.error(err);
   }
 }
@@ -683,10 +691,10 @@ async function quickAdd() {
 
   const exact = dict.byPinyin(raw, 1);
   const hit = exact[0] ?? dict.search(raw)[0];
-  if (!hit) { toast('Eşleşme yok'); return; }
+  if (!hit) { toast(t('toast.noMatch')); return; }
 
   const dup = await db.findByHanzi(hit.hanzi);
-  if (dup) { toast(`${hit.hanzi} zaten havuzda`); return; }
+  if (dup) { toast(t('toast.dupe', { x: hit.hanzi })); return; }
 
   await db.addNote(
     {
@@ -698,7 +706,7 @@ async function quickAdd() {
     },
     state.settings.types
   );
-  toast(`${hit.hanzi} ${toMarks(hit.pinyin)} eklendi`);
+  toast(t('toast.added', { x: `${hit.hanzi} ${toMarks(hit.pinyin)}` }));
   $('dict-q').value = '';
   $('dict-results').innerHTML = '';
   $('dict-status').textContent = '';
@@ -715,10 +723,10 @@ async function runSearch() {
   const hits = dict.search(q);
   if (!hits.length) {
     list.innerHTML = '';
-    $('dict-status').textContent = 'Eşleşme yok.';
+    $('dict-status').textContent = t('add.noMatch');
     return;
   }
-  $('dict-status').textContent = `${hits.length} sonuç`;
+  $('dict-status').textContent = t('add.results', { n: hits.length });
 
   const existing = new Set([...state.notes.values()].map((n) => n.hanzi));
   list.innerHTML = hits
@@ -731,7 +739,7 @@ async function runSearch() {
           <span class="result-meaning">${escapeHtml(h.meaning.replace(/;/g, ' · '))}</span>
         </span>
         ${existing.has(h.hanzi)
-          ? '<span class="result-flag">havuzda</span>'
+          ? `<span class="result-flag">${t('add.inPool')}</span>`
           : '<span class="result-plus">+</span>'}
       </button></li>`
     )
@@ -744,7 +752,7 @@ async function runSearch() {
 
 async function addFromDict(hit, btn) {
   const dup = await db.findByHanzi(hit.hanzi);
-  if (dup) { toast(`${hit.hanzi} zaten havuzda`); return; }
+  if (dup) { toast(t('toast.dupe', { x: hit.hanzi })); return; }
 
   await db.addNote(
     {
@@ -758,9 +766,9 @@ async function addFromDict(hit, btn) {
   );
   btn.classList.add('is-dupe');
   el('.result-plus', btn)?.replaceWith(Object.assign(document.createElement('span'), {
-    className: 'result-flag', textContent: 'eklendi',
+    className: 'result-flag', textContent: t('add.added'),
   }));
-  toast(`${hit.hanzi} eklendi`);
+  toast(t('toast.added', { x: hit.hanzi }));
   await refresh();
 }
 
@@ -866,7 +874,7 @@ async function previewBulk() {
         parsed.options = hits;
         applyOption(parsed, 0);
       } else {
-        parsed.error = 'Bu okunuşta kayıt yok';
+        parsed.error = t('add.errNoReading');
       }
     }
 
@@ -880,21 +888,21 @@ async function previewBulk() {
       }
     }
     parsed.dupe = !!(await db.findByHanzi(parsed.hanzi));
-    if (!parsed.hanzi) parsed.error ||= 'Karakter yok';
-    else if (!parsed.pinyin) parsed.error ||= 'Pinyin bulunamadı';
+    if (!parsed.hanzi) parsed.error ||= t('add.errNoHanzi');
+    else if (!parsed.pinyin) parsed.error ||= t('add.errNoPinyin');
     out.push(parsed);
   }
 
   bulkParsed = out;
   const usable = out.filter((p) => !p.error && !p.dupe);
   $('btn-bulk-add').disabled = usable.length === 0;
-  $('btn-bulk-add').textContent = usable.length ? `${usable.length} kaydı ekle` : 'Ekle';
+  $('btn-bulk-add').textContent = usable.length ? t('add.addN', { n: usable.length }) : t('add.add');
 
   $('bulk-preview').innerHTML = out
     .map((p, i) => {
       const alt =
         p.options?.length > 1
-          ? `<select class="alt-pick" data-alt="${i}" aria-label="Başka karakter seç">${p.options
+          ? `<select class="alt-pick" data-alt="${i}" aria-label="${t('add.pickOther')}">${p.options
               .map(
                 (o, k) =>
                   `<option value="${k}"${k === (p.chosen ?? 0) ? ' selected' : ''}>${escapeHtml(
@@ -906,11 +914,11 @@ async function previewBulk() {
       const flag = p.error
         ? escapeHtml(p.error)
         : p.dupe
-          ? 'havuzda'
+          ? t('add.inPool')
           : p.fromPinyin
-            ? 'okunuştan'
+            ? t('add.fromPinyin')
             : p.filled
-              ? 'sözlükten'
+              ? t('add.fromDict')
               : '';
       return `<li><div class="result ${p.error || p.dupe ? 'is-dupe' : ''}">
         <span class="result-hanzi">${escapeHtml(p.hanzi || '—')}</span>
@@ -955,7 +963,7 @@ async function commitBulk() {
       state.settings.types
     );
   }
-  toast(`${usable.length} kayıt eklendi`);
+  toast(t('toast.bulkAdded', { n: usable.length }));
   $('bulk-text').value = '';
   $('bulk-preview').innerHTML = '';
   $('btn-bulk-add').disabled = true;
@@ -967,12 +975,12 @@ async function addManual() {
   const hanzi = $('m-hanzi').value.trim();
   const pinyin = $('m-pinyin').value.trim();
   const meaning = $('m-meaning').value.trim();
-  if (!hanzi || !meaning) { toast('Karakter ve anlam gerekli'); return; }
-  if (await db.findByHanzi(hanzi)) { toast('Bu karakter zaten havuzda'); return; }
+  if (!hanzi || !meaning) { toast(t('toast.needFields')); return; }
+  if (await db.findByHanzi(hanzi)) { toast(t('toast.dupe', { x: hanzi })); return; }
 
   await db.addNote({ deckId: currentDeck(), hanzi, pinyin, meaning }, state.settings.types);
   $('m-hanzi').value = $('m-pinyin').value = $('m-meaning').value = '';
-  toast(`${hanzi} eklendi`);
+  toast(t('toast.added', { x: hanzi }));
   await refresh();
 }
 
@@ -999,7 +1007,7 @@ function renderBrowse() {
   }
   notes.sort((a, b) => b.createdAt - a.createdAt);
 
-  $('browse-count').textContent = `${notes.length} kayıt`;
+  $('browse-count').textContent = t('browse.count', { n: notes.length });
   $('browse-empty').hidden = notes.length > 0;
 
   const byNote = new Map();
@@ -1019,8 +1027,8 @@ function renderBrowse() {
           <span class="note-pinyin">${escapeHtml(toMarks(n.pinyin))}</span>
           <span class="note-meaning">${escapeHtml(n.meaning)}</span>
         </span>
-        <span class="note-due">${soonest ? escapeHtml(dueLabel(soonest)) : '—'}<br>${cards.length} kart</span>
-        <button class="icon-btn" data-del="${n.id}" aria-label="Sil">✕</button>
+        <span class="note-due">${soonest ? escapeHtml(dueLabel(soonest)) : '—'}<br>${t('browse.cards', { n: cards.length })}</span>
+        <button class="icon-btn" data-del="${n.id}" aria-label="${t('browse.delete')}">✕</button>
       </li>`;
     })
     .join('');
@@ -1028,9 +1036,9 @@ function renderBrowse() {
   els('[data-del]').forEach((btn) =>
     btn.addEventListener('click', async () => {
       const note = state.notes.get(btn.dataset.del);
-      if (!confirm(`"${note.hanzi}" silinsin mi? Tekrar geçmişi de gider.`)) return;
+      if (!confirm(t('confirm.deleteNote', { x: note.hanzi }))) return;
       await db.removeNote(note.id);
-      toast('Silindi');
+      toast(t('toast.deleted'));
       await refresh();
     })
   );
@@ -1040,6 +1048,20 @@ function renderBrowse() {
 
 function bindSettings() {
   const s = state.settings;
+
+  const langSel = $('opt-lang');
+  langSel.innerHTML = LANGUAGES.map(
+    ([code, name]) => `<option value="${code}">${name}</option>`
+  ).join('');
+  langSel.value = getLang();
+  langSel.addEventListener('change', async (e) => {
+    setLang(e.target.value);
+    state.settings.lang = e.target.value;
+    await db.setSetting('lang', e.target.value);
+    await refresh();
+    renderStudyHome();
+  });
+
   $('opt-type-pinyin').checked = s.types.includes('pinyin');
   $('opt-type-meaning').checked = s.types.includes('meaning');
   $('opt-type-recall').checked = s.types.includes('recall');
@@ -1052,11 +1074,11 @@ function bindSettings() {
     if ($('opt-type-meaning').checked) types.push('meaning');
     if ($('opt-type-recall').checked) types.push('recall');
     if ($('opt-type-write').checked) types.push('write');
-    if (!types.length) { toast('En az bir tür açık kalmalı'); $('opt-type-pinyin').checked = true; return; }
+    if (!types.length) { toast(t('toast.oneType')); $('opt-type-pinyin').checked = true; return; }
     state.settings.types = types;
     await db.setSetting('types', types);
     const added = await db.backfillCards(types);
-    if (added) toast(`${added} yeni kart üretildi`);
+    if (added) toast(t('toast.cardsMade', { n: added }));
     // Kapatılan türdeki kategori seçiliyse karışığa dön.
     if (state.settings.mode && state.settings.mode !== 'all' && !types.includes(state.settings.mode)) {
       state.settings.mode = 'all';
@@ -1086,13 +1108,11 @@ function bindSettings() {
 function updateTtsStatus() {
   const node = $('tts-status');
   if (!('speechSynthesis' in window)) {
-    node.textContent = 'Bu tarayıcı seslendirmeyi desteklemiyor.';
+    node.textContent = t('set.ttsUnsupported');
     return;
   }
   const v = chineseVoice();
-  node.textContent = v
-    ? `Kullanılan ses: ${v.name}`
-    : 'Cihazda Çince ses paketi bulunamadı — sistem ayarlarından eklemen gerekebilir.';
+  node.textContent = v ? t('set.ttsVoice', { name: v.name }) : t('set.ttsNone');
 }
 
 async function exportBackup() {
@@ -1104,7 +1124,7 @@ async function exportBackup() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   $('backup-status').textContent =
-    `Son yedek: ${new Date().toLocaleString('tr')} · ${data.notes.length} kayıt`;
+    t('set.lastBackup', { date: new Date().toLocaleString(getLang()), n: data.notes.length });
 }
 
 async function importBackup(e) {
@@ -1116,9 +1136,9 @@ async function importBackup(e) {
     state.settings = await db.getSettings();
     state.decks = await db.allDecks();
     await refresh();
-    toast(`${stats.notes} kayıt birleştirildi`);
+    toast(t('toast.merged', { n: stats.notes }));
   } catch (err) {
-    toast(err.message ?? 'Dosya okunamadı');
+    toast(err.message ?? t('toast.fileError'));
   }
   e.target.value = '';
 }
@@ -1132,9 +1152,9 @@ function renderDeckList() {
     .map(
       (d) => `<li class="deck-row">
         <span>${escapeHtml(d.name)}</span>
-        <em>${counts.get(d.id) ?? 0} kayıt</em>
-        <button class="icon-btn" data-deck-rename="${d.id}" aria-label="Yeniden adlandır">✎</button>
-        ${state.decks.length > 1 ? `<button class="icon-btn" data-deck-del="${d.id}" aria-label="Sil">✕</button>` : ''}
+        <em>${t('set.deckNotes', { n: counts.get(d.id) ?? 0 })}</em>
+        <button class="icon-btn" data-deck-rename="${d.id}" aria-label="${t('set.rename')}">✎</button>
+        ${state.decks.length > 1 ? `<button class="icon-btn" data-deck-del="${d.id}" aria-label="${t('set.delete')}">✕</button>` : ''}
       </li>`
     )
     .join('');
@@ -1142,7 +1162,7 @@ function renderDeckList() {
   els('[data-deck-rename]').forEach((b) =>
     b.addEventListener('click', async () => {
       const deck = state.decks.find((d) => d.id === b.dataset.deckRename);
-      const name = prompt('Yeni ad', deck.name);
+      const name = prompt(t('prompt.rename'), deck.name);
       if (!name?.trim()) return;
       await db.renameDeck(deck.id, name.trim());
       state.decks = await db.allDecks();
@@ -1153,7 +1173,7 @@ function renderDeckList() {
     b.addEventListener('click', async () => {
       const deck = state.decks.find((d) => d.id === b.dataset.deckDel);
       const n = [...state.notes.values()].filter((x) => x.deckId === deck.id).length;
-      if (!confirm(`"${deck.name}" ve içindeki ${n} kayıt silinsin mi?`)) return;
+      if (!confirm(t('confirm.deleteDeck', { x: deck.name, n }))) return;
       await db.removeDeck(deck.id);
       state.decks = await db.allDecks();
       if (state.settings.lastDeck === deck.id) {
@@ -1167,9 +1187,16 @@ function renderDeckList() {
 
 /* ═══════════════════ ortak ═══════════════════ */
 
+/** Künye: sözlük kaynağına bağlantı içerdiği için ayrı üretiliyor. */
+function renderColophon() {
+  $('colophon').innerHTML = t('set.colophon', {
+    link: '<a href="https://cc-cedict.org/" target="_blank" rel="noopener">CC-CEDICT</a>',
+  });
+}
+
 function fillDeckSelects() {
   const opts = state.decks.map((d) => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
-  const all = `<option value="all">Tüm desteler</option>`;
+  const all = `<option value="all">${escapeHtml(t('deck.all'))}</option>`;
 
   const study = $('study-deck');
   study.innerHTML = all + opts;
@@ -1179,6 +1206,17 @@ function fillDeckSelects() {
   const add = $('add-deck');
   add.innerHTML = opts;
   add.value = currentDeck();
+
+  // Tek deste varken açılır kutu seçecek bir şey sunmuyor; yerine hangi
+  // desteye eklendiğini söyleyen tek satır gösteriliyor.
+  const single = state.decks.length === 1;
+  $('deck-compact').hidden = !single;
+  $('deck-full').hidden = single;
+  if (single) {
+    $('deck-compact-text').innerHTML = t('add.deckCompact', {
+      deck: escapeHtml(state.decks[0].name),
+    });
+  }
 
   const browse = $('browse-deck');
   const keep = browse.value;

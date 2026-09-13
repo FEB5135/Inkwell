@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#faf7f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#f7f2e6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#14120f" media="(prefers-color-scheme: dark)">
 <meta name="description" content="Kendi hanzi havuzunu kur, aralıklı tekrarla ezberle.">
 <title>Inkwell</title>
@@ -23,37 +23,35 @@
     <div class="view" id="study-home">
       <header class="page-head">
         <h1 class="wordmark"><img src="icons/icon-192.png" alt="" width="34" height="34">Inkwell</h1>
-        <p class="subtitle" id="study-greeting">Bugünün tekrarı</p>
+        <p class="subtitle" data-i18n="study.greeting">Bugünün tekrarı</p>
       </header>
 
       <div class="queue-grid">
         <div class="queue-stat queue-stat--new">
           <span class="queue-num" id="count-pool">0</span>
-          <span class="queue-label">kart</span>
+          <span class="queue-label" data-i18n="count.cards">kart</span>
         </div>
         <div class="queue-stat queue-stat--learn">
           <span class="queue-num" id="count-today">0</span>
-          <span class="queue-label">bugün</span>
+          <span class="queue-label" data-i18n="count.today">bugün</span>
         </div>
         <div class="queue-stat queue-stat--due">
           <span class="queue-num" id="count-mature">0</span>
-          <span class="queue-label">yerleşmiş</span>
+          <span class="queue-label" data-i18n="count.mature">yerleşmiş</span>
         </div>
       </div>
 
       <div class="deck-picker">
-        <label class="field-label" for="study-deck">Deste</label>
+        <label class="field-label" for="study-deck" data-i18n="study.deck">Deste</label>
         <select id="study-deck" class="select"></select>
       </div>
 
-      <label class="field-label">Ne çalışacaksın</label>
+      <label class="field-label" data-i18n="study.what">Ne çalışacaksın</label>
       <div class="modes" id="modes"></div>
 
-      <button class="btn btn--primary btn--xl" id="btn-start">Çalışmaya başla</button>
+      <button class="btn btn--primary btn--xl" id="btn-start" data-i18n="study.start">Çalışmaya başla</button>
 
-      <p class="empty-note" id="study-empty" hidden>
-        Bugünlük bu kadar. Yeni kart eklemek istersen <button class="linkish" data-goto="add">Ekle</button> sekmesine geç.
-      </p>
+      <p class="empty-note" id="study-empty" hidden></p>
 
       <div class="mini-stats" id="mini-stats"></div>
     </div>
@@ -61,7 +59,7 @@
     <!-- oturum içi: kart -->
     <div class="view" id="study-session" hidden>
       <div class="session-bar">
-        <button class="icon-btn" id="btn-quit" aria-label="Oturumu bitir">✕</button>
+        <button class="icon-btn" id="btn-quit" data-i18n-aria="study.quit" aria-label="Oturumu bitir">✕</button>
         <div class="progress"><div class="progress-fill" id="progress-fill"></div></div>
         <span class="session-left" id="session-left">0</span>
       </div>
@@ -72,25 +70,25 @@
         <!-- ön yüz -->
         <div class="card-face" id="card-front"></div>
 
-        <!-- pinyin yazma kutusu -->
+        <!-- yazılan cevap -->
         <div class="answer-box" id="answer-box" hidden>
           <input type="text" id="answer-input" class="answer-input" autocomplete="off"
                  autocorrect="off" autocapitalize="off" spellcheck="false"
-                 placeholder="ni3 hao3" inputmode="latin" enterkeyhint="done">
-          <p class="answer-hint" id="answer-hint">Ton için sayı kullan: <code>hao3</code> → hǎo</p>
+                 inputmode="latin" enterkeyhint="done">
+          <p class="answer-hint" id="answer-hint"></p>
         </div>
 
         <!-- kalemle yazma -->
         <div class="write-box" id="write-box" hidden>
           <div class="write-grid" id="write-grid"></div>
-          <p class="write-status" id="write-status">Karakteri strok sırasıyla çiz</p>
+          <p class="write-status" id="write-status"></p>
           <div class="write-actions">
-            <button class="btn btn--ghost btn--sm" id="btn-write-hint">İpucu</button>
-            <button class="btn btn--ghost btn--sm" id="btn-write-give">Bilmiyorum</button>
+            <button class="btn btn--ghost btn--sm" id="btn-write-hint" data-i18n="write.hint">İpucu</button>
+            <button class="btn btn--ghost btn--sm" id="btn-write-give" data-i18n="write.giveUp">Bilmiyorum</button>
           </div>
         </div>
 
-        <!-- değerlendirme (her kart türü için ortak) -->
+        <!-- değerlendirme -->
         <p class="answer-verdict" id="answer-verdict" hidden></p>
 
         <!-- arka yüz -->
@@ -98,9 +96,9 @@
       </div>
 
       <div class="card-actions">
-        <button class="btn btn--primary btn--xl" id="btn-reveal">Göster</button>
+        <button class="btn btn--primary btn--xl" id="btn-reveal" data-i18n="study.reveal">Göster</button>
         <button class="btn btn--primary btn--xl btn--next" id="btn-next" hidden>
-          Sonraki <span aria-hidden="true">→</span>
+          <span data-i18n="study.next">Sonraki</span> <span aria-hidden="true">→</span>
         </button>
       </div>
     </div>
@@ -108,163 +106,159 @@
     <!-- oturum sonu -->
     <div class="view view--center" id="study-done" hidden>
       <div class="seal">成</div>
-      <h2>Oturum bitti</h2>
+      <h2 data-i18n="study.done">Oturum bitti</h2>
       <p class="muted" id="done-summary"></p>
-      <button class="btn btn--ghost" id="btn-done-back">Geri dön</button>
+      <button class="btn btn--ghost" id="btn-done-back" data-i18n="study.back">Geri dön</button>
     </div>
   </section>
 
   <!-- ══════════════ EKLE ══════════════ -->
   <section class="screen" id="screen-add" data-screen="add" hidden>
     <header class="page-head">
-      <h1>Ekle</h1>
-      <p class="subtitle">Sözlükten ara ya da toplu yapıştır</p>
+      <h1 data-i18n="add.title">Ekle</h1>
+      <p class="subtitle" data-i18n="add.subtitle">Sözlükten ara ya da toplu yapıştır</p>
     </header>
 
     <div class="tabs" role="tablist">
-      <button class="tab is-active" data-addtab="search" role="tab">Sözlükten</button>
-      <button class="tab" data-addtab="bulk" role="tab">Toplu yapıştır</button>
-      <button class="tab" data-addtab="manual" role="tab">Elle</button>
+      <button class="tab is-active" data-addtab="search" role="tab" data-i18n="add.tabSearch">Sözlükten</button>
+      <button class="tab" data-addtab="bulk" role="tab" data-i18n="add.tabBulk">Toplu yapıştır</button>
+      <button class="tab" data-addtab="manual" role="tab" data-i18n="add.tabManual">Elle</button>
     </div>
 
-    <div class="deck-picker">
-      <label class="field-label" for="add-deck">Eklenecek deste</label>
-      <div class="row">
-        <select id="add-deck" class="select"></select>
-        <button class="btn btn--ghost btn--sm" id="btn-new-deck">+ Yeni</button>
+    <!-- Deste seçimi üç sekmenin de üstünde duruyor: hangisinden eklersen
+         ekle kayıt bu desteye gider. Tek deste varken açılır kutu gereksiz
+         yer kapladığı için tek satıra iniyor. -->
+    <div class="deck-picker" id="deck-picker">
+      <div class="deck-compact" id="deck-compact" hidden>
+        <span id="deck-compact-text"></span>
+        <button class="linkish" id="btn-new-deck-compact" data-i18n="add.newDeck">+ Yeni deste</button>
+      </div>
+      <div id="deck-full" hidden>
+        <label class="field-label" for="add-deck" data-i18n="add.deckLabel">Eklenecek deste</label>
+        <div class="row">
+          <select id="add-deck" class="select"></select>
+          <button class="btn btn--ghost btn--sm" id="btn-new-deck" data-i18n="add.newDeckShort">+ Yeni</button>
+        </div>
       </div>
     </div>
 
     <!-- sözlük araması -->
     <div class="addpane" id="addpane-search">
-      <input type="search" id="dict-q" class="input input--lg" placeholder="hao3 · hao · good · 好"
+      <input type="search" id="dict-q" class="input input--lg" data-i18n-ph="add.searchPh"
              autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-      <p class="hint">
-        <b>Enter</b>'a basınca en üstteki sonuç doğrudan eklenir —
-        <code>ni3</code> ⏎ <code>hao3</code> ⏎ diye aralıksız girebilirsin.
-        Başka bir karakter istiyorsan listeden seç.
-      </p>
+      <p class="hint" data-i18n-html="add.searchHint"></p>
       <div class="dict-status" id="dict-status"></div>
       <ul class="results" id="dict-results"></ul>
     </div>
 
     <!-- toplu -->
     <div class="addpane" id="addpane-bulk" hidden>
-      <textarea id="bulk-text" class="textarea" rows="9" spellcheck="false"
-placeholder="ni3 hao3
-dian4hua4
-lao3shi1 öğretmen
-好 hao3 iyi
-谢谢"></textarea>
-      <p class="hint">
-        Her satıra bir kayıt. <b>Sadece pinyin yazman yeter</b> — karakter ve anlam
-        sözlükten gelir. Karakteri yapıştırırsan da olur. Kendi anlamını yazmak
-        istersen pinyin'den sonra ekle.
-      </p>
+      <textarea id="bulk-text" class="textarea" rows="9" spellcheck="false"></textarea>
+      <p class="hint" data-i18n-html="add.bulkHint"></p>
       <div class="row row--end">
-        <button class="btn btn--ghost" id="btn-bulk-preview">Önizle</button>
-        <button class="btn btn--primary" id="btn-bulk-add" disabled>Ekle</button>
+        <button class="btn btn--ghost" id="btn-bulk-preview" data-i18n="add.preview">Önizle</button>
+        <button class="btn btn--primary" id="btn-bulk-add" data-i18n="add.add" disabled>Ekle</button>
       </div>
       <ul class="results" id="bulk-preview"></ul>
     </div>
 
     <!-- elle -->
     <div class="addpane" id="addpane-manual" hidden>
-      <label class="field-label" for="m-hanzi">Karakter</label>
-      <input id="m-hanzi" class="input input--hanzi" placeholder="好">
-      <label class="field-label" for="m-pinyin">Pinyin</label>
-      <input id="m-pinyin" class="input" placeholder="hao3" autocapitalize="off" spellcheck="false">
-      <label class="field-label" for="m-meaning">Anlam</label>
-      <input id="m-meaning" class="input" placeholder="iyi, güzel">
-      <button class="btn btn--primary" id="btn-manual-add">Ekle</button>
+      <label class="field-label" for="m-hanzi" data-i18n="add.hanzi">Karakter</label>
+      <input id="m-hanzi" class="input input--hanzi">
+      <label class="field-label" for="m-pinyin" data-i18n="add.pinyin">Pinyin</label>
+      <input id="m-pinyin" class="input" autocapitalize="off" spellcheck="false">
+      <label class="field-label" for="m-meaning" data-i18n="add.meaning">Anlam</label>
+      <input id="m-meaning" class="input">
+      <button class="btn btn--primary" id="btn-manual-add" data-i18n="add.add">Ekle</button>
     </div>
   </section>
 
   <!-- ══════════════ HAVUZ ══════════════ -->
   <section class="screen" id="screen-browse" data-screen="browse" hidden>
     <header class="page-head">
-      <h1>Havuz</h1>
+      <h1 data-i18n="browse.title">Havuz</h1>
       <p class="subtitle" id="browse-count"></p>
     </header>
 
     <div class="row">
       <select id="browse-deck" class="select"></select>
-      <input type="search" id="browse-q" class="input" placeholder="Ara">
+      <input type="search" id="browse-q" class="input" data-i18n-ph="browse.search">
     </div>
 
     <ul class="notes" id="notes-list"></ul>
-    <p class="empty-note" id="browse-empty" hidden>Bu destede henüz kayıt yok.</p>
+    <p class="empty-note" id="browse-empty" data-i18n="browse.empty" hidden></p>
   </section>
 
   <!-- ══════════════ AYARLAR ══════════════ -->
   <section class="screen" id="screen-settings" data-screen="settings" hidden>
     <header class="page-head">
-      <h1>Ayarlar</h1>
+      <h1 data-i18n="set.title">Ayarlar</h1>
     </header>
 
     <div class="setting-group">
-      <h2 class="group-title">Kart türleri</h2>
-      <p class="hint">
-        Her kayıt seçtiğin türler için ayrı ayrı takip edilir. Üçünde de cevabı
-        yazarsın; not, cevabın doğruya yakınlığına göre önerilir.
-      </p>
-      <label class="check"><input type="checkbox" id="opt-type-pinyin" checked>
-        <span><b>Okunuş</b><i>汉 → pinyin'i yaz</i></span></label>
-      <label class="check"><input type="checkbox" id="opt-type-meaning" checked>
-        <span><b>Anlam</b><i>hǎo → anlamını yaz</i></span></label>
-      <label class="check"><input type="checkbox" id="opt-type-recall" checked>
-        <span><b>Üretim</b><i>anlam → okunuşu yaz, karakteri hatırla</i></span></label>
-      <label class="check"><input type="checkbox" id="opt-type-write">
-        <span><b>Yazma</b><i>anlam → karakteri kalemle çiz (dokunmatik ekran gerekir)</i></span></label>
+      <h2 class="group-title" data-i18n="set.language">Dil</h2>
+      <select id="opt-lang" class="select"></select>
     </div>
 
     <div class="setting-group">
-      <h2 class="group-title">Ses</h2>
+      <h2 class="group-title" data-i18n="set.cardTypes">Kart türleri</h2>
+      <p class="hint" data-i18n="set.cardTypesHint"></p>
+      <label class="check"><input type="checkbox" id="opt-type-pinyin" checked>
+        <span><b data-i18n="type.pinyin">Okunuş</b><i data-i18n="set.typePinyinDesc"></i></span></label>
+      <label class="check"><input type="checkbox" id="opt-type-meaning" checked>
+        <span><b data-i18n="type.meaning">Anlam</b><i data-i18n="set.typeMeaningDesc"></i></span></label>
+      <label class="check"><input type="checkbox" id="opt-type-recall" checked>
+        <span><b data-i18n="type.recall">Üretim</b><i data-i18n="set.typeRecallDesc"></i></span></label>
+      <label class="check"><input type="checkbox" id="opt-type-write">
+        <span><b data-i18n="type.write">Yazma</b><i data-i18n="set.typeWriteDesc"></i></span></label>
+    </div>
+
+    <div class="setting-group">
+      <h2 class="group-title" data-i18n="set.sound">Ses</h2>
       <label class="check"><input type="checkbox" id="opt-tts">
-        <span><b>Karakteri seslendir</b><i>cevap açılınca Çince okunuşu çalar</i></span></label>
+        <span><b data-i18n="set.tts">Karakteri seslendir</b><i data-i18n="set.ttsDesc"></i></span></label>
       <p class="hint" id="tts-status"></p>
     </div>
 
     <div class="setting-group">
-      <h2 class="group-title">Yedek</h2>
-      <p class="hint">Tüm kayıtların bu cihazda tutuluyor. Düzenli yedek al.</p>
+      <h2 class="group-title" data-i18n="set.backup">Yedek</h2>
+      <p class="hint" data-i18n="set.backupHint"></p>
       <div class="row">
-        <button class="btn btn--ghost" id="btn-export">Dışa aktar</button>
-        <button class="btn btn--ghost" id="btn-import">İçe aktar</button>
+        <button class="btn btn--ghost" id="btn-export" data-i18n="set.export">Dışa aktar</button>
+        <button class="btn btn--ghost" id="btn-import" data-i18n="set.import">İçe aktar</button>
       </div>
       <input type="file" id="import-file" accept="application/json" hidden>
       <p class="hint" id="backup-status"></p>
     </div>
 
     <div class="setting-group">
-      <h2 class="group-title">Desteler</h2>
+      <h2 class="group-title" data-i18n="set.decks">Desteler</h2>
+      <p class="hint" data-i18n="add.deckExplain"></p>
       <ul class="deck-list" id="deck-list"></ul>
     </div>
 
-    <p class="colophon">
-      Inkwell · sözlük verisi <a href="https://cc-cedict.org/" target="_blank" rel="noopener">CC-CEDICT</a>
-      (CC BY-SA 4.0)
-    </p>
+    <p class="colophon" id="colophon"></p>
   </section>
 
   <!-- ══════════════ ALT GEZİNME ══════════════ -->
   <nav class="tabbar" id="tabbar">
     <button class="tabbar-btn is-active" data-goto="study">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-7a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h7z"/></svg>
-      <span>Çalış</span>
+      <span data-i18n="nav.study">Çalış</span>
       <em class="badge" id="tab-badge" hidden></em>
     </button>
     <button class="tabbar-btn" data-goto="add">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-      <span>Ekle</span>
+      <span data-i18n="nav.add">Ekle</span>
     </button>
     <button class="tabbar-btn" data-goto="browse">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-      <span>Havuz</span>
+      <span data-i18n="nav.browse">Havuz</span>
     </button>
     <button class="tabbar-btn" data-goto="settings">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M3 12h2M19 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-      <span>Ayarlar</span>
+      <span data-i18n="nav.settings">Ayarlar</span>
     </button>
   </nav>
 

@@ -257,6 +257,7 @@ export async function reviewsSince(ts) {
 /* ───────────────────────── ayarlar ───────────────────────── */
 
 const DEFAULTS = {
+  lang: null,            // null = cihazın diline bak
   types: ['pinyin', 'meaning', 'recall'],
   mode: 'all',
   tts: false,

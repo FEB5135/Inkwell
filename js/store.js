@@ -8,7 +8,8 @@
  *
  * Şemalar
  *   decks   { id, name, createdAt, updatedAt, deleted }
- *   notes   { id, deckId, hanzi, trad, pinyin, meaning, createdAt, updatedAt, deleted }
+ *   notes   { id, deckId, hanzi, trad, pinyin, meaning, learnedAt,
+ *             createdAt, updatedAt, deleted }
  *   cards   { id, noteId, type, due, ivl, ease, reps, lapses, state, step,
  *             lastReview, updatedAt, deleted }
  *   reviews { id, cardId, noteId, ts, rating, ivl }
@@ -148,6 +149,7 @@ export async function addNote({ deckId, hanzi, trad = '', pinyin, meaning }, typ
   const now = Date.now();
   const note = {
     id: uid(), deckId, hanzi, trad, pinyin, meaning,
+    learnedAt: null,
     createdAt: now, updatedAt: now, deleted: false,
   };
   const cards = types.map((type) => ({
@@ -173,6 +175,46 @@ export async function updateNote(id, patch) {
       Object.assign(n, patch, { updatedAt: Date.now() });
       s.put(n);
     };
+  });
+}
+
+/**
+ * Kaydı "öğrenildi" olarak işaretler ya da işareti kaldırır.
+ *
+ * Kartlar ve zamanlama silinmez, yalnız normal kuyruğun dışına çıkar: karakter
+ * öğrenildi diye unutulmaz, kendi kategorisinden istendiği zaman çalışılır.
+ * Alan eksikse (eski kayıtlar) yokluğu "öğrenilmedi" demektir.
+ */
+export async function setLearned(ids, on) {
+  const now = Date.now();
+  return tx(['notes'], 'readwrite', (s) => {
+    for (const id of ids) {
+      const req = s.get(id);
+      req.onsuccess = () => {
+        const n = req.result;
+        if (!n) return;
+        n.learnedAt = on ? now : null;
+        n.updatedAt = now;
+        s.put(n);
+      };
+    }
+  });
+}
+
+/** Kayıtları başka desteye taşır. Kartlar ve zamanlama olduğu gibi kalır. */
+export async function moveNotes(ids, deckId) {
+  const now = Date.now();
+  return tx(['notes'], 'readwrite', (s) => {
+    for (const id of ids) {
+      const req = s.get(id);
+      req.onsuccess = () => {
+        const n = req.result;
+        if (!n) return;
+        n.deckId = deckId;
+        n.updatedAt = now;
+        s.put(n);
+      };
+    }
   });
 }
 
@@ -261,7 +303,12 @@ const DEFAULTS = {
   types: ['pinyin', 'meaning', 'recall'],
   mode: 'all',
   tts: false,
+  theme: 'system',
+  // lastDeck: yeni kaydın gideceği deste. studyDeck: çalışılan deste.
+  // Tek ayar olduklarında yeni deste açmak çalışma kuyruğunu sessizce
+  // boşaltıyordu; ayrıldılar.
   lastDeck: null,
+  studyDeck: 'all',
 };
 
 export async function getSettings() {

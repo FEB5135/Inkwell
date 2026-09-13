@@ -102,6 +102,19 @@ const contentWords = (text) =>
   normalize(text).split(' ').filter((w) => w && !STOP.has(w));
 
 /**
+ * CC-CEDICT karşılıkları açıklama parantezleri taşır:
+ * "name (of a person or thing)", "cat (CL:只)", "(coll.) modem". Parantez
+ * içi karşılığın kendisi değil, onu ayırt eden nottur — cevabın parçası
+ * sayılırsa "name" yazan kullanıcı eksik cevap vermiş gibi görünür.
+ * Parantezi atınca geriye bir şey kalmıyorsa (karşılığın tamamı parantezse)
+ * özgün metne dönülür.
+ */
+function coreSense(sense) {
+  const core = String(sense).replace(/\([^)]*\)/g, ' ').replace(/\[[^\]]*\]/g, ' ');
+  return contentWords(core).length ? core : sense;
+}
+
+/**
  * Yazılan anlamı kayıttaki anlamla karşılaştırır.
  *
  * Anlam alanı birden çok karşılık taşır ("teacher; instructor" ya da kendi
@@ -126,9 +139,9 @@ export function compareMeaning(given, expected) {
   for (const sense of senses) {
     const s = normalize(sense);
     if (!s) continue;
-    if (s === g) return { level: 'exact', matched: sense };
+    if (s === g || normalize(coreSense(sense)) === g) return { level: 'exact', matched: sense };
 
-    const sWords = contentWords(sense);
+    const sWords = contentWords(coreSense(sense));
     if (!sWords.length) continue;
 
     // Anlamlı sözcüklerin tamamı yazıldıysa doğru say ("teacher" ↔ "a teacher")

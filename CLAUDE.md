@@ -25,6 +25,10 @@ cihaz eşitlemesi veri kaybı olmadan eklenebilsin diye.
 **Arayüz dili Türkçe ve İngilizce.** Yeni metin eklerken `js/i18n.js`'e iki
 dilde de anahtar ekle; sabit metinler `data-i18n`, dinamikler `t()`.
 
+**Tarayıcının `prompt`/`confirm` kutuları kullanılmaz.** Uygulamanın dışında
+duruyorlar. `index.html`'deki tek `<dialog>` üstünden `askText()` ve
+`askConfirm()` var.
+
 ---
 
 ## Mimari
@@ -86,7 +90,17 @@ bozulmasın diye gösterimi duruyor.
 ## Çalışma akışı
 
 Havuzun tamamı karıştırılıp baştan sona geliyor — vade ya da günlük sınır yok.
-Cevap yazılır, sonuç görünür, oka basılıp geçilir.
+Cevap yazılır, sonuç görünür, oka basılıp geçilir. Kategori rozetlerindeki
+sayı da bu yüzden vadeyi değil, o kategoriyi seçersen gelecek kart sayısını
+gösteriyor.
+
+**Öğrenildi**, kart durumu değil kullanıcının kararı. Doğru cevaptan sonra
+çıkan düğmeyle işaretlenir (`notes.learnedAt`), kayıt normal kuyruktan çıkar
+ama kartları ve zamanlaması durur; kendi kategorisinden istendiği zaman
+çalışılır, Havuz'dan geri alınır.
+
+Ekleme hedefi (`lastDeck`) ile çalışılan deste (`studyDeck`) ayrı ayarlar.
+Tek ayardılar; yeni deste açmak çalışma kuyruğunu sessizce boşaltıyordu.
 
 **Not kullanıcıdan sorulmuyor.** Cevap zaten ölçüldüğü için yakınlıktan
 türetiliyor: tam → İyi, ton yanlış / bir harf sapma → Zor, diğer → Tekrar.

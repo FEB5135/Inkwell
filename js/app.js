@@ -36,6 +36,7 @@ const state = {
   decks: [],
   cards: [],
   notes: new Map(),
+  picked: new Set(),
   screen: 'study',
   session: null,
 };
@@ -45,6 +46,7 @@ const state = {
 async function init() {
   state.settings = await db.getSettings();
   setLang(state.settings.lang ?? detect());
+  applyTheme(state.settings.theme ?? 'system');
 
   state.decks = await db.allDecks();
   if (!state.decks.length) {
@@ -108,14 +110,16 @@ function bindStudy() {
     renderStudyHome();
   });
   $('btn-next').addEventListener('click', advance);
+  $('btn-learned').addEventListener('click', markLearned);
   $('study-deck').addEventListener('change', (e) => {
-    db.setSetting('lastDeck', e.target.value);
-    state.settings.lastDeck = e.target.value;
+    db.setSetting('studyDeck', e.target.value);
+    state.settings.studyDeck = e.target.value;
     renderStudyHome();
   });
-  $('answer-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); revealOrCheck(); }
-  });
+  // Enter'ı yalnız bindKeys dinliyor. Burada ikinci bir dinleyici daha vardı:
+  // tek basışta önce bu kontrol ediyor, ardından belgeye ulaşan aynı olay
+  // kartı "zaten açılmış" görüp geçiyordu — sonuç paneli göz açıp kapayana
+  // kadar kayboluyordu.
 }
 
 /** Seçili destenin kartları (tümü seçiliyse hepsi). */
@@ -127,21 +131,36 @@ function bindStudy() {
  * ikisi de yarım kalıyor. "Karışık" isteyen için o seçenek de duruyor.
  */
 function scopedCards() {
-  const deckId = state.settings.lastDeck;
+  const deckId = state.settings.studyDeck;
   const mode = state.settings.mode ?? 'all';
   const enabled = new Set(state.settings.types);
   return state.cards.filter((c) => {
     if (!enabled.has(c.type)) return false;
-    if (mode !== 'all' && c.type !== mode) return false;
+    const note = state.notes.get(c.noteId);
+    if (!note) return false;
+    // Öğrenildi işaretli kayıtlar normal kuyruktan çıkar; kendi kategorisi
+    // seçiliyse de yalnız onlar kalır.
+    if (isLearned(note) !== (mode === LEARNED)) return false;
+    if (mode !== 'all' && mode !== LEARNED && c.type !== mode) return false;
     if (!deckId || deckId === 'all') return true;
-    return state.notes.get(c.noteId)?.deckId === deckId;
+    return note.deckId === deckId;
   });
 }
 
-/** Kategori düğmeleri; her birinin yanında o kategoride bekleyen kart sayısı. */
+/** Kategori değeri; kart türü değil, kuyruğun hangi havuzdan geleceği. */
+const LEARNED = 'learned';
+const isLearned = (note) => Boolean(note?.learnedAt);
+
+/**
+ * Kategori düğmeleri; her birinin yanında o kategoriyi seçersen kaç kart
+ * geleceği yazar.
+ *
+ * Eskiden burada "vadesi gelmiş" kart sayılıyordu, oysa oturum vadeye
+ * bakmadan havuzun tamamını veriyor: rozetteki sayı ile "Çalışmaya başla"
+ * düğmesindeki sayı tutmuyordu. Artık ikisi aynı şeyi sayıyor.
+ */
 function renderModes() {
-  const now = Date.now();
-  const deckId = state.settings.lastDeck;
+  const deckId = state.settings.studyDeck;
   const enabled = state.settings.types;
   const current = state.settings.mode ?? 'all';
 
@@ -149,20 +168,27 @@ function renderModes() {
     !deckId || deckId === 'all' || state.notes.get(c.noteId)?.deckId === deckId;
 
   const countFor = (type) =>
-    state.cards.filter(
-      (c) =>
-        inDeck(c) &&
-        (type === 'all' ? enabled.includes(c.type) : c.type === type) &&
-        (c.state === 'new' || c.due <= now)
-    ).length;
+    state.cards.filter((c) => {
+      const note = state.notes.get(c.noteId);
+      if (!note || !inDeck(c)) return false;
+      if (!enabled.includes(c.type)) return false;
+      if (isLearned(note) !== (type === LEARNED)) return false;
+      if (type !== 'all' && type !== LEARNED && c.type !== type) return false;
+      return true;
+    }).length;
 
   const options = [['all', t('mode.all')], ...enabled.map((type) => [type, typeLabel(type)])];
+  // Kategori ancak işaretlenmiş kayıt varken görünür; boşken gereksiz duruyor.
+  if (state.cards.some((c) => isLearned(state.notes.get(c.noteId)))) {
+    options.push([LEARNED, t('mode.learned')]);
+  }
 
   $('modes').innerHTML = options
     .map(([value, label]) => {
       const n = countFor(value);
-      return `<button class="mode ${value === current ? 'is-active' : ''}" data-mode="${value}">
-        ${escapeHtml(label)}${n ? `<em>${n}</em>` : ''}
+      return `<button class="mode ${value === current ? 'is-active' : ''}${n ? '' : ' is-empty'}"
+              data-mode="${value}"${n ? '' : ' disabled'}>
+        ${escapeHtml(label)}<em>${n}</em>
       </button>`;
     })
     .join('');
@@ -224,6 +250,9 @@ function endSession(silent = false) {
   $('study-session').hidden = true;
   if (silent) {
     $('study-home').hidden = false;
+    // Oturum içinde "öğrenildi" işaretlenmiş olabilir: kategoriler de tazelenmeli,
+    // yoksa yeni kategori ancak bir sonraki tam yenilemede beliriyor.
+    renderModes();
     renderStudyHome();
     return;
   }
@@ -254,6 +283,7 @@ function nextCard() {
   back.hidden = true;
   $('btn-next').hidden = true;
   $('btn-reveal').hidden = false;
+  $('btn-learned').hidden = true;
   $('answer-verdict').hidden = true;
 
   const answer = TYPES[card.type]?.answer ?? null;
@@ -288,7 +318,9 @@ function nextCard() {
     input.value = '';
     input.disabled = false;
     if (answer === 'pinyin') {
-      input.placeholder = 'ni3 hao3';
+      // Kutunun içinde örnek yazmıyoruz: altındaki ipucu zaten ton yazımını
+      // söylüyor, ikisi birden cevabın durduğu yeri kalabalıklaştırıyordu.
+      input.placeholder = '';
       input.className = 'answer-input answer-input--pinyin';
       $('answer-hint').innerHTML = t('card.tonehint');
     } else {
@@ -329,6 +361,7 @@ function revealOrCheck() {
     s.wasCorrect = result.level === 'exact';
   }
 
+  renderLearnButton(note);
   reveal(note);
 }
 
@@ -360,6 +393,35 @@ function renderVerdict(result, given, expected) {
   }
 
   verdict.innerHTML = `${t(`verdict.${result.level}`)}${detail ? `<div class="verdict-detail">${detail}</div>` : ''}`;
+}
+
+/**
+ * "Öğrenildi" düğmesi yalnız doğru cevaptan sonra çıkar — bir karakteri
+ * havuzdan çekme kararı, bildiğini gösterdikten sonra anlamlı. Yazma kartı
+ * kendi kendine değerlendirildiği için orada da doğru sayılır.
+ */
+function renderLearnButton(note) {
+  const btn = $('btn-learned');
+  const show = state.session?.wasCorrect && !isLearned(note);
+  btn.hidden = !show;
+  if (show) btn.textContent = t('study.markLearned');
+}
+
+async function markLearned() {
+  const s = state.session;
+  if (!s) return;
+  const note = state.notes.get(s.current.noteId);
+  if (!note) return;
+
+  await db.setLearned([note.id], true);
+  note.learnedAt = Date.now();
+  // Aynı karakterin kuyrukta bekleyen diğer kartları da düşer; az önce
+  // "biliyorum" dediğin karakteri iki kart sonra tekrar sormak tuhaf olurdu.
+  s.queue = s.queue.filter((c, i) => i === 0 || c.noteId !== note.id);
+  s.total = s.done + s.queue.length;
+
+  $('btn-learned').hidden = true;
+  toast(t('toast.learned', { x: note.hanzi }));
 }
 
 function reveal(note) {
@@ -561,7 +623,9 @@ function finishWrite(mistakes) {
   el('.write-actions').hidden = true;
   els('.write-cell').forEach((c) => c.classList.remove('is-active'));
   s.autoGrade = suggestGrade(level);
-  reveal(state.notes.get(s.current.noteId));
+  const note = state.notes.get(s.current.noteId);
+  renderLearnButton(note);
+  reveal(note);
 }
 
 /** Strok verisi yoksa kart elle değerlendirmeye düşer. */
@@ -642,13 +706,13 @@ function bindAdd() {
   });
 
   const newDeck = async () => {
-    const name = prompt(t('prompt.newDeck'));
-    if (!name?.trim()) return;
-    const deck = await db.addDeck(name.trim());
+    const name = await askText(t('prompt.newDeck'), '', { ok: t('dialog.create') });
+    if (!name) return;
+    const deck = await db.addDeck(name);
     state.decks = await db.allDecks();
     state.settings.lastDeck = deck.id;
     await db.setSetting('lastDeck', deck.id);
-    fillDeckSelects();
+    await refresh();
     toast(t('toast.deckCreated', { x: deck.name }));
   };
   $('btn-new-deck').addEventListener('click', newDeck);
@@ -987,11 +1051,46 @@ async function addManual() {
 /* ═══════════════════ havuz ═══════════════════ */
 
 function bindBrowse() {
-  $('browse-deck').addEventListener('change', renderBrowse);
+  $('browse-deck').addEventListener('change', () => { state.picked.clear(); renderBrowse(); });
   $('browse-q').addEventListener('input', renderBrowse);
+
+  $('btn-browse-clear').addEventListener('click', () => { state.picked.clear(); renderBrowse(); });
+  $('btn-browse-all').addEventListener('click', () => {
+    // Listede o an ne görünüyorsa onu seçer: süzgeç neyse seçim de odur.
+    const shown = visibleNotes();
+    const all = shown.every((n) => state.picked.has(n.id));
+    shown.forEach((n) => (all ? state.picked.delete(n.id) : state.picked.add(n.id)));
+    renderBrowse();
+  });
+  $('btn-browse-move').addEventListener('click', movePicked);
+  $('btn-browse-learn').addEventListener('click', toggleLearnedPicked);
 }
 
-function renderBrowse() {
+/** Seçilenlerin tamamı işaretliyse işareti kaldırır, değilse işaretler. */
+async function toggleLearnedPicked() {
+  const ids = [...state.picked];
+  if (!ids.length) return;
+  const notes = ids.map((id) => state.notes.get(id)).filter(Boolean);
+  const on = !notes.every(isLearned);
+  await db.setLearned(ids, on);
+  state.picked.clear();
+  toast(t(on ? 'toast.learnedN' : 'toast.unlearnedN', { n: ids.length }));
+  await refresh();
+}
+
+async function movePicked() {
+  const ids = [...state.picked];
+  const deckId = $('browse-move').value;
+  if (!ids.length || !deckId) return;
+  await db.moveNotes(ids, deckId);
+  const deck = state.decks.find((d) => d.id === deckId);
+  state.picked.clear();
+  toast(t('toast.moved', { n: ids.length, x: deck?.name ?? '' }));
+  await refresh();
+}
+
+/** Havuzda o an süzgeçten geçen kayıtlar; seçim de taşıma da bunun üstünde. */
+function visibleNotes() {
   const deckId = $('browse-deck').value;
   const q = $('browse-q').value.trim().toLowerCase();
 
@@ -1005,7 +1104,15 @@ function renderBrowse() {
         n.meaning.toLowerCase().includes(q)
     );
   }
-  notes.sort((a, b) => b.createdAt - a.createdAt);
+  return notes.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+function renderBrowse() {
+  const notes = visibleNotes();
+  const shown = new Set(notes.map((n) => n.id));
+  // Süzgeç değişince görünmeyen kayıt seçili kalmasın: göremediğin şeyi taşımak
+  // sürpriz olur.
+  for (const id of state.picked) if (!shown.has(id)) state.picked.delete(id);
 
   $('browse-count').textContent = t('browse.count', { n: notes.length });
   $('browse-empty').hidden = notes.length > 0;
@@ -1016,16 +1123,25 @@ function renderBrowse() {
     byNote.get(c.noteId).push(c);
   }
 
+  const deckName = new Map(state.decks.map((d) => [d.id, d.name]));
+  const showDeck = $('browse-deck').value === 'all' && state.decks.length > 1;
+
   $('notes-list').innerHTML = notes
     .slice(0, 300)
     .map((n) => {
       const cards = byNote.get(n.id) ?? [];
       const soonest = cards.reduce((a, c) => (!a || c.due < a.due ? c : a), null);
-      return `<li class="note" data-note="${n.id}">
+      const picked = state.picked.has(n.id);
+      const learned = isLearned(n);
+      return `<li class="note${picked ? ' is-picked' : ''}${learned ? ' is-learned' : ''}" data-note="${n.id}">
         <span class="note-hanzi">${escapeHtml(n.hanzi)}</span>
         <span class="note-body">
           <span class="note-pinyin">${escapeHtml(toMarks(n.pinyin))}</span>
           <span class="note-meaning">${escapeHtml(n.meaning)}</span>
+          <span class="note-deck">${[
+            learned ? `<b class="note-learned">${escapeHtml(t('browse.learned'))}</b>` : '',
+            showDeck ? escapeHtml(deckName.get(n.deckId) ?? '') : '',
+          ].filter(Boolean).join(' · ')}</span>
         </span>
         <span class="note-due">${soonest ? escapeHtml(dueLabel(soonest)) : '—'}<br>${t('browse.cards', { n: cards.length })}</span>
         <button class="icon-btn" data-del="${n.id}" aria-label="${t('browse.delete')}">✕</button>
@@ -1033,15 +1149,57 @@ function renderBrowse() {
     })
     .join('');
 
+  $('notes-list').classList.add('is-selectable');
+  els('[data-note]').forEach((li) =>
+    li.addEventListener('click', (e) => {
+      if (e.target.closest('[data-del]')) return;
+      const id = li.dataset.note;
+      state.picked.has(id) ? state.picked.delete(id) : state.picked.add(id);
+      renderBrowse();
+    })
+  );
+
   els('[data-del]').forEach((btn) =>
     btn.addEventListener('click', async () => {
       const note = state.notes.get(btn.dataset.del);
-      if (!confirm(t('confirm.deleteNote', { x: note.hanzi }))) return;
+      const yes = await askConfirm(t('confirm.deleteNote', { x: note.hanzi }), t('confirm.deleteNoteText'), {
+        ok: t('set.delete'), danger: true,
+      });
+      if (!yes) return;
       await db.removeNote(note.id);
+      state.picked.delete(note.id);
       toast(t('toast.deleted'));
       await refresh();
     })
   );
+
+  renderBulkBar();
+}
+
+/** Seçim çubuğu: bir şey seçiliyken görünür, taşınacak desteyi sorar. */
+function renderBulkBar() {
+  const n = state.picked.size;
+  const bar = $('browse-bulk');
+  bar.hidden = n === 0;
+  if (bar.hidden) return;
+
+  $('browse-picked').textContent = t('browse.picked', { n });
+
+  // Taşıyacak başka deste yoksa taşıma kısmı görünmez; işaretleme her zaman var.
+  const many = state.decks.length > 1;
+  $('browse-move').hidden = !many;
+  $('btn-browse-move').hidden = !many;
+
+  const notes = [...state.picked].map((id) => state.notes.get(id)).filter(Boolean);
+  $('btn-browse-learn').textContent =
+    notes.length && notes.every(isLearned) ? t('browse.unlearn') : t('browse.learn');
+
+  const sel = $('browse-move');
+  const keep = sel.value;
+  sel.innerHTML = state.decks
+    .map((d) => `<option value="${d.id}">${escapeHtml(d.name)}</option>`)
+    .join('');
+  if (keep && state.decks.some((d) => d.id === keep)) sel.value = keep;
 }
 
 /* ═══════════════════ ayarlar ═══════════════════ */
@@ -1062,6 +1220,16 @@ function bindSettings() {
     renderStudyHome();
   });
 
+  applyTheme(s.theme ?? 'system');
+  els('[data-theme-pick]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const theme = b.dataset.themePick;
+      state.settings.theme = theme;
+      applyTheme(theme);
+      await db.setSetting('theme', theme);
+    })
+  );
+
   $('opt-type-pinyin').checked = s.types.includes('pinyin');
   $('opt-type-meaning').checked = s.types.includes('meaning');
   $('opt-type-recall').checked = s.types.includes('recall');
@@ -1080,7 +1248,8 @@ function bindSettings() {
     const added = await db.backfillCards(types);
     if (added) toast(t('toast.cardsMade', { n: added }));
     // Kapatılan türdeki kategori seçiliyse karışığa dön.
-    if (state.settings.mode && state.settings.mode !== 'all' && !types.includes(state.settings.mode)) {
+    if (state.settings.mode && state.settings.mode !== 'all'
+        && state.settings.mode !== LEARNED && !types.includes(state.settings.mode)) {
       state.settings.mode = 'all';
       await db.setSetting('mode', 'all');
     }
@@ -1162,9 +1331,9 @@ function renderDeckList() {
   els('[data-deck-rename]').forEach((b) =>
     b.addEventListener('click', async () => {
       const deck = state.decks.find((d) => d.id === b.dataset.deckRename);
-      const name = prompt(t('prompt.rename'), deck.name);
-      if (!name?.trim()) return;
-      await db.renameDeck(deck.id, name.trim());
+      const name = await askText(t('prompt.rename'), deck.name, { ok: t('dialog.save') });
+      if (!name) return;
+      await db.renameDeck(deck.id, name);
       state.decks = await db.allDecks();
       await refresh();
     })
@@ -1173,12 +1342,19 @@ function renderDeckList() {
     b.addEventListener('click', async () => {
       const deck = state.decks.find((d) => d.id === b.dataset.deckDel);
       const n = [...state.notes.values()].filter((x) => x.deckId === deck.id).length;
-      if (!confirm(t('confirm.deleteDeck', { x: deck.name, n }))) return;
+      const yes = await askConfirm(t('prompt.deleteDeck', { x: deck.name }), t('confirm.deleteDeck', { x: deck.name, n }), {
+        ok: t('set.delete'), danger: true,
+      });
+      if (!yes) return;
       await db.removeDeck(deck.id);
       state.decks = await db.allDecks();
       if (state.settings.lastDeck === deck.id) {
         state.settings.lastDeck = state.decks[0]?.id ?? null;
         await db.setSetting('lastDeck', state.settings.lastDeck);
+      }
+      if (state.settings.studyDeck === deck.id) {
+        state.settings.studyDeck = 'all';
+        await db.setSetting('studyDeck', 'all');
       }
       await refresh();
     })
@@ -1200,7 +1376,7 @@ function fillDeckSelects() {
 
   const study = $('study-deck');
   study.innerHTML = all + opts;
-  study.value = state.settings.lastDeck ?? 'all';
+  study.value = state.settings.studyDeck ?? 'all';
   if (!study.value) study.value = 'all';
 
   const add = $('add-deck');
@@ -1223,6 +1399,82 @@ function fillDeckSelects() {
   browse.innerHTML = all + opts;
   browse.value = keep && [...browse.options].some((o) => o.value === keep) ? keep : 'all';
 }
+
+/* ═══════════════════ tema ═══════════════════ */
+
+const THEMES = ['system', 'light', 'dark'];
+
+/**
+ * 'system' seçiliyse özniteliği hiç koymayız; CSS o zaman işletim sisteminin
+ * tercihini dinler. Adres çubuğunun rengi de temayla birlikte değişmeli,
+ * yoksa koyu temada tepede açık bir şerit kalıyor.
+ */
+function applyTheme(theme) {
+  const root = document.documentElement;
+  if (theme === 'system') root.removeAttribute('data-theme');
+  else root.dataset.theme = theme;
+
+  const dark = theme === 'dark'
+    || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  for (const m of els('meta[name="theme-color"]')) m.remove();
+  const meta = document.createElement('meta');
+  meta.name = 'theme-color';
+  meta.content = dark ? '#14120f' : '#f7f2e6';
+  document.head.appendChild(meta);
+
+  els('[data-theme-pick]').forEach((b) =>
+    b.classList.toggle('is-active', b.dataset.themePick === theme)
+  );
+}
+
+/* ═══════════════════ diyalog ═══════════════════ */
+
+/**
+ * Tek bir <dialog> üstünde iki iş: metin sormak ve onaylatmak.
+ * <dialog> odak tuzağını, Esc'i ve arka planı tarayıcıdan hazır alıyor;
+ * bize yalnız sözü veren sarmalayıcı kalıyor.
+ */
+function openDialog({ title, text = '', value = null, ok, cancel, danger = false }) {
+  const dlg = $('dialog');
+  const input = $('dialog-input');
+  const okBtn = $('dialog-ok');
+
+  $('dialog-title').textContent = title;
+  $('dialog-text').textContent = text;
+  $('dialog-text').hidden = !text;
+
+  input.hidden = value === null;
+  input.value = value ?? '';
+
+  okBtn.textContent = ok ?? t('dialog.ok');
+  okBtn.classList.toggle('btn--danger', danger);
+  $('dialog-cancel').textContent = cancel ?? t('dialog.cancel');
+
+  return new Promise((resolve) => {
+    const close = () => {
+      dlg.removeEventListener('close', onClose);
+      $('dialog-cancel').removeEventListener('click', onCancel);
+    };
+    const onCancel = () => dlg.close('');
+    const onClose = () => {
+      close();
+      if (dlg.returnValue !== 'ok') return resolve(null);
+      resolve(input.hidden ? true : input.value.trim() || null);
+    };
+    dlg.addEventListener('close', onClose);
+    $('dialog-cancel').addEventListener('click', onCancel);
+
+    dlg.returnValue = '';
+    dlg.showModal();
+    if (!input.hidden) { input.focus(); input.select(); }
+  });
+}
+
+/** Metin sorar; iptal ya da boş girdide null döner. */
+const askText = (title, value = '', opts = {}) => openDialog({ title, value, ...opts });
+
+/** Onaylatır; evet ise true, değilse null. */
+const askConfirm = (title, text, opts = {}) => openDialog({ title, text, ...opts });
 
 let toastTimer;
 function toast(msg) {

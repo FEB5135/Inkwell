@@ -7,20 +7,28 @@
 :root {
   color-scheme: light;
 
-  --paper:      #faf7f2;
-  --paper-2:    #ffffff;
-  --paper-sunk: #f2ede4;
-  --ink:        #1c1a17;
-  --ink-2:      #55504a;
-  --ink-3:      #8b847b;
-  --rule:       #e3dccf;
-  --rule-2:     #d3cabb;
+  --paper:      #f6f1e7;   /* xuan kağıdı — hafif sarıya çalar */
+  --paper-2:    #fffdf8;
+  --paper-sunk: #ece4d5;
+  --ink:        #17150f;
+  --ink-2:      #4e4840;
+  --ink-3:      #8a8175;
+  --rule:       #e0d7c5;
+  --rule-2:     #cdc2ad;
 
-  --seal:       #c0392b;   /* 朱砂 — vurgu */
-  --seal-soft:  #f6e7e4;
-  --jade:       #3f7d60;   /* doğru */
-  --amber:      #b8791f;   /* zor */
-  --slate:      #4a6b8a;   /* kolay */
+  --seal:       #ab2f22;   /* 朱砂 — mühür mürekkebi */
+  --seal-deep:  #8c2018;
+  --seal-soft:  #f6e4df;
+  /* Düğme dolgusu ayrı: koyu temada vurgu rengi aydınlanıyor, beyaz yazıyı
+     taşıyacak kadar koyu bir kırmızı gerekiyor. */
+  --seal-fill-a: #ab2f22;
+  --seal-fill-b: #8c2018;
+  --jade:       #2f7358;   /* doğru */
+  --amber:      #a9701a;   /* zor */
+  --slate:      #3d6382;   /* kolay */
+  --gold:       #c8a45c;   /* ince vurgu çizgileri */
+  --wash-1:     rgba(171,47,34,.07);
+  --wash-2:     rgba(200,164,92,.10);
 
   --radius:     14px;
   --radius-sm:  9px;
@@ -38,33 +46,41 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --paper:      #14120f;
-    --paper-2:    #1d1a16;
-    --paper-sunk: #100e0c;
-    --ink:        #f0ebe2;
-    --ink-2:      #b3aca1;
-    --ink-3:      #7d766c;
-    --rule:       #2e2a25;
-    --rule-2:     #3d382f;
-    --seal:       #e4614f;
-    --seal-soft:  #2e1d1a;
-    --jade:       #5aa37f;
-    --amber:      #d99b3d;
-    --slate:      #74a0c4;
-    --shadow:     0 1px 2px rgba(0,0,0,.4), 0 6px 20px -8px rgba(0,0,0,.6);
-    --shadow-lg:  0 2px 4px rgba(0,0,0,.45), 0 18px 40px -16px rgba(0,0,0,.7);
+    --paper:      #17150f;
+    --paper-2:    #211d16;
+    --paper-sunk: #100e09;
+    --ink:        #f3eee2;
+    --ink-2:      #bab2a3;
+    --ink-3:      #857c6d;
+    --rule:       #332e24;
+    --rule-2:     #463f31;
+    --seal:       #e2705c;
+    --seal-deep:  #b94636;
+    --seal-soft:  #34201b;
+    --seal-fill-a: #b94636;
+    --seal-fill-b: #93301f;
+    --jade:       #63ad88;
+    --amber:      #dca648;
+    --slate:      #7ba7cc;
+    --gold:       #a98a48;
+    --wash-1:     rgba(226,112,92,.10);
+    --wash-2:     rgba(169,138,72,.07);
+    --shadow:     0 1px 2px rgba(0,0,0,.45), 0 6px 20px -8px rgba(0,0,0,.65);
+    --shadow-lg:  0 2px 4px rgba(0,0,0,.5), 0 18px 40px -16px rgba(0,0,0,.75);
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --paper: #14120f; --paper-2: #1d1a16; --paper-sunk: #100e0c;
-  --ink: #f0ebe2; --ink-2: #b3aca1; --ink-3: #7d766c;
-  --rule: #2e2a25; --rule-2: #3d382f;
-  --seal: #e4614f; --seal-soft: #2e1d1a;
-  --jade: #5aa37f; --amber: #d99b3d; --slate: #74a0c4;
-  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px -8px rgba(0,0,0,.6);
-  --shadow-lg: 0 2px 4px rgba(0,0,0,.45), 0 18px 40px -16px rgba(0,0,0,.7);
+  --paper: #17150f; --paper-2: #211d16; --paper-sunk: #100e09;
+  --ink: #f3eee2; --ink-2: #bab2a3; --ink-3: #857c6d;
+  --rule: #332e24; --rule-2: #463f31;
+  --seal: #e2705c; --seal-deep: #b94636; --seal-soft: #34201b;
+  --seal-fill-a: #b94636; --seal-fill-b: #93301f;
+  --jade: #63ad88; --amber: #dca648; --slate: #7ba7cc; --gold: #a98a48;
+  --wash-1: rgba(226,112,92,.10); --wash-2: rgba(169,138,72,.07);
+  --shadow: 0 1px 2px rgba(0,0,0,.45), 0 6px 20px -8px rgba(0,0,0,.65);
+  --shadow-lg: 0 2px 4px rgba(0,0,0,.5), 0 18px 40px -16px rgba(0,0,0,.75);
 }
 
 * { box-sizing: border-box; }
@@ -90,8 +106,10 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: .5;
-  background-image: radial-gradient(circle at 50% 0%, rgba(192,57,43,.05), transparent 60%);
+  opacity: .7;
+  background-image:
+    radial-gradient(ellipse 120% 55% at 50% -8%, var(--wash-1), transparent 70%),
+    radial-gradient(ellipse 90% 40% at 100% 100%, var(--wash-2), transparent 70%);
 }
 
 .app {
@@ -119,7 +137,22 @@ body::before {
 .wordmark img { display: block; flex: none; border-radius: 8px; }
 
 .subtitle { margin: 4px 0 0; color: var(--ink-3); font-size: .92rem; }
-.group-title { margin: 0 0 6px; font-size: .95rem; font-weight: 650; letter-spacing: .01em; }
+.group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px;
+  font-size: .95rem;
+  font-weight: 650;
+  letter-spacing: .01em;
+}
+.group-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  opacity: .55;
+}
 
 /* ─── kuyruk özeti ─── */
 .queue-grid {
@@ -129,6 +162,8 @@ body::before {
   margin: 4px 0 22px;
 }
 .queue-stat {
+  position: relative;
+  overflow: hidden;
   background: var(--paper-2);
   border: 1px solid var(--rule);
   border-radius: var(--radius);
@@ -136,11 +171,22 @@ body::before {
   text-align: center;
   box-shadow: var(--shadow);
 }
+/* Sayının rengini kartın tepesinde bir şerit olarak tekrarlamak, üç kutuyu
+   bakışta ayırıyor. */
+.queue-stat::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: currentColor;
+  opacity: .85;
+}
+.queue-stat--new  { color: var(--slate); }
+.queue-stat--learn { color: var(--amber); }
+.queue-stat--due  { color: var(--seal); }
 .queue-num { display: block; font-size: 1.9rem; font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .queue-label { font-size: .78rem; color: var(--ink-3); letter-spacing: .03em; }
-.queue-stat--new  .queue-num { color: var(--slate); }
-.queue-stat--learn .queue-num { color: var(--amber); }
-.queue-stat--due  .queue-num { color: var(--seal); }
+.queue-num { color: currentColor; }
 
 .mini-stats {
   margin-top: 26px;
@@ -230,8 +276,19 @@ body::before {
   transition: transform .08s, filter .15s, background .15s;
 }
 .btn:active { transform: translateY(1px); }
-.btn--primary { background: var(--seal); color: #fff; box-shadow: var(--shadow); }
-.btn--primary:hover { filter: brightness(1.06); }
+.btn--primary {
+  background: linear-gradient(180deg, var(--seal-fill-a), var(--seal-fill-b));
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+.btn--primary:hover { filter: brightness(1.08); }
+.btn--danger {
+  background: none;
+  color: var(--seal);
+  border-color: var(--seal);
+  box-shadow: none;
+}
+.btn--danger:hover { background: var(--seal-soft); filter: none; }
 .btn--primary:disabled { background: var(--rule-2); color: var(--ink-3); box-shadow: none; cursor: default; }
 .btn--ghost { background: var(--paper-2); color: var(--ink); border-color: var(--rule-2); }
 .btn--ghost:hover { background: var(--paper-sunk); }
@@ -251,15 +308,14 @@ body::before {
 .empty-note { color: var(--ink-3); font-size: .9rem; text-align: center; margin: 20px 0; }
 
 /* ─── çalışma kategorileri ─── */
+/* Kategoriler yan kaydırmalı bir şeritti: fareyle kaydırılamadığı için sondaki
+   kategori görünmez oluyordu. Artık alt satıra sarıyor — hepsi tek bakışta. */
 .modes {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
   margin-bottom: 20px;
-  scrollbar-width: none;
 }
-.modes::-webkit-scrollbar { display: none; }
 .mode {
   flex: none;
   font: inherit;
@@ -288,10 +344,14 @@ body::before {
   font-variant-numeric: tabular-nums;
 }
 .mode.is-active {
-  background: var(--seal);
-  border-color: var(--seal);
+  background: var(--seal-fill-a);
+  border-color: var(--seal-fill-a);
   color: #fff;
 }
+.mode.is-active em { background: rgba(255,255,255,.22); color: #fff; }
+/* Boş kategori seçilebilir durmasın: sayısı sıfırsa oturum da açılmaz. */
+.mode.is-empty { opacity: .45; cursor: default; }
+.mode.is-empty:hover { background: var(--paper-2); }
 .mode.is-active em { background: rgba(255,255,255,.22); color: #fff; }
 
 /* ═══════════ ÇALIŞMA OTURUMU ═══════════ */
@@ -581,7 +641,16 @@ body::before {
 .alt-pick:focus { outline: none; border-color: var(--seal); }
 
 /* ═══════════ HAVUZ ═══════════ */
-.notes { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+/* minmax(0,1fr): ızgara gözü varsayılan olarak içeriğinden küçülmez, uzun
+   anlam satırı sayfayı yana taşırırdı. */
+.notes {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
 .note {
   display: flex;
   align-items: center;
@@ -591,11 +660,52 @@ body::before {
   border-radius: var(--radius-sm);
   padding: 11px 13px;
 }
+.is-selectable .note { cursor: pointer; }
+.note.is-picked { border-color: var(--seal); background: var(--paper-sunk); }
 .note-hanzi { font-family: var(--han); font-size: 1.8rem; flex: none; min-width: 2.2em; }
 .note-body { flex: 1; min-width: 0; }
 .note-pinyin { color: var(--seal); font-weight: 600; font-size: .92rem; }
-.note-meaning { color: var(--ink-2); font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Sözlükten gelen anlamlar uzun olabiliyor; satırı taşırmasın diye kırpılır.
+   Kırpma yalnız blok kutuda çalışır, satır içi span'de değil. */
+.note-meaning {
+  display: block;
+  color: var(--ink-2);
+  font-size: .85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .note-due { font-size: .72rem; color: var(--ink-3); flex: none; text-align: right; line-height: 1.35; }
+.note-deck { display: block; font-size: .72rem; color: var(--ink-3); margin-top: 2px; }
+.note-learned { color: var(--jade); font-weight: 600; }
+.note.is-learned .note-hanzi { opacity: .72; }
+
+/* Kartın altında, "Sonraki"den ayrı dursun diye ortalanmış ve sessiz. */
+.learn-btn {
+  display: block;
+  margin: 14px auto 0;
+  color: var(--jade);
+  border-color: var(--rule-2);
+}
+.learn-btn:hover { border-color: var(--jade); }
+
+/* Seçim çubuğu listeye yapışık durur; kaydırınca ekranda kalır. */
+.bulk-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 9px 11px;
+  background: var(--paper-2);
+  border: 1px solid var(--seal);
+  border-radius: var(--radius-sm);
+}
+.bulk-bar > .select { flex: 1; min-width: 7em; }
+.bulk-count { font-size: .85rem; font-weight: 600; color: var(--ink-2); }
 
 .deck-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
 .deck-row {
@@ -664,6 +774,62 @@ body::before {
 }
 
 /* ═══════════ BİLDİRİM ═══════════ */
+/* ─── segment seçici ─── */
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--paper-sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+}
+.segment {
+  flex: 1;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  border-radius: calc(var(--radius-sm) - 3px);
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.segment:hover { color: var(--ink); }
+.segment.is-active {
+  background: var(--paper-2);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+/* ─── diyalog ─── */
+.dialog {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--ink);
+  max-width: min(420px, calc(100vw - 32px));
+  width: 100%;
+}
+.dialog::backdrop { background: rgba(10,8,6,.5); backdrop-filter: blur(2px); }
+.dialog[open] { animation: dialog-in .16s ease-out; }
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+}
+.dialog-card {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 22px;
+  display: grid;
+  gap: 12px;
+}
+.dialog-title { margin: 0; font-size: 1.08rem; font-weight: 650; letter-spacing: -.01em; }
+.dialog-text { margin: 0; color: var(--ink-2); font-size: .9rem; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
 .toast {
   position: fixed;
   left: 50%;

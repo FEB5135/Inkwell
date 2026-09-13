@@ -93,6 +93,10 @@
 
         <!-- arka yüz -->
         <div class="card-back" id="card-back" hidden></div>
+
+        <!-- Yalnız doğru cevaptan sonra çıkar: bir karakteri havuzdan
+             çekmeye ancak bildiğini gösterdikten sonra karar verilebilir. -->
+        <button class="btn btn--ghost btn--sm learn-btn" id="btn-learned" hidden></button>
       </div>
 
       <div class="card-actions">
@@ -186,6 +190,17 @@
       <input type="search" id="browse-q" class="input" data-i18n-ph="browse.search">
     </div>
 
+    <!-- Kayda dokununca seçilir. Yanlış bölüme eklenmiş bir karakteri doğru
+         desteye taşımanın tek yolu bu; taşıma kartları ve zamanlamayı bozmaz. -->
+    <div class="bulk-bar" id="browse-bulk" hidden>
+      <span class="bulk-count" id="browse-picked"></span>
+      <button class="linkish" id="btn-browse-all" data-i18n="browse.selectAll">Tümü</button>
+      <select id="browse-move" class="select"></select>
+      <button class="btn btn--ghost btn--sm" id="btn-browse-move" data-i18n="browse.move">Taşı</button>
+      <button class="btn btn--ghost btn--sm" id="btn-browse-learn"></button>
+      <button class="icon-btn" id="btn-browse-clear" data-i18n-aria="browse.clearPick">✕</button>
+    </div>
+
     <ul class="notes" id="notes-list"></ul>
     <p class="empty-note" id="browse-empty" data-i18n="browse.empty" hidden></p>
   </section>
@@ -199,6 +214,15 @@
     <div class="setting-group">
       <h2 class="group-title" data-i18n="set.language">Dil</h2>
       <select id="opt-lang" class="select"></select>
+    </div>
+
+    <div class="setting-group">
+      <h2 class="group-title" data-i18n="set.theme">Görünüm</h2>
+      <div class="segmented" id="opt-theme" role="group">
+        <button class="segment" data-theme-pick="system" data-i18n="set.themeSystem">Sistem</button>
+        <button class="segment" data-theme-pick="light" data-i18n="set.themeLight">Açık</button>
+        <button class="segment" data-theme-pick="dark" data-i18n="set.themeDark">Koyu</button>
+      </div>
     </div>
 
     <div class="setting-group">
@@ -263,6 +287,21 @@
   </nav>
 
 </div>
+
+<!-- Tarayıcının prompt/confirm kutuları uygulamanın dışında duruyor: kendi
+     yazı tipimiz, kendi rengimiz yok. Aynı işi kağıdın üstünde yapan tek bir
+     diyalog var; metin soran da onaylatan da bu. -->
+<dialog class="dialog" id="dialog">
+  <form method="dialog" class="dialog-card">
+    <h2 class="dialog-title" id="dialog-title"></h2>
+    <p class="dialog-text" id="dialog-text" hidden></p>
+    <input class="input" id="dialog-input" autocapitalize="off" hidden>
+    <div class="dialog-actions">
+      <button type="button" class="btn btn--ghost" id="dialog-cancel"></button>
+      <button type="submit" class="btn btn--primary" id="dialog-ok" value="ok"></button>
+    </div>
+  </form>
+</dialog>
 
 <div class="toast" id="toast" hidden></div>
 

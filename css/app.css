@@ -422,26 +422,13 @@ body::before {
 .answer-verdict small { display: block; font-weight: 400; color: var(--ink-3); font-size: .8rem; margin-top: 2px; }
 
 .card-actions { padding-bottom: 8px; }
-.grade-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.grade {
-  font: inherit;
-  background: var(--paper-2);
-  border: 1px solid var(--rule-2);
-  border-radius: var(--radius-sm);
-  padding: 12px 4px 10px;
-  cursor: pointer;
-  display: grid;
-  gap: 3px;
-  transition: transform .08s, background .15s;
+.btn--next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
-.grade:active { transform: translateY(1px); }
-.grade b { font-size: .88rem; font-weight: 650; }
-.grade i { font-style: normal; font-size: .72rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.grade--again b { color: var(--seal); }
-.grade--hard  b { color: var(--amber); }
-.grade--good  b { color: var(--jade); }
-.grade--easy  b { color: var(--slate); }
-.grade--again:hover { background: var(--seal-soft); }
+.btn--next span { font-size: 1.2em; line-height: 1; }
 
 .view--center { text-align: center; padding-top: 12vh; }
 .seal {

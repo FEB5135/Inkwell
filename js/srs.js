@@ -108,18 +108,6 @@ export function schedule(card, grade, now = Date.now()) {
   return c;
 }
 
-/** Düğmelerin altında gösterilen "bir sonraki tekrar" önizlemesi. */
-export function previewLabel(card, grade, now = Date.now()) {
-  const next = schedule(card, grade, now);
-  const ms = next.due - now;
-  if (ms < 45 * MIN) return `${Math.max(1, Math.round(ms / MIN))} dk`;
-  if (ms < DAY) return `${Math.round(ms / (60 * MIN))} sa`;
-  const days = ms / DAY;
-  if (days < 30) return `${Math.round(days)} gün`;
-  if (days < 365) return `${(days / 30).toFixed(days < 60 ? 1 : 0)} ay`;
-  return `${(days / 365).toFixed(1)} yıl`;
-}
-
 /** Havuz ekranında "ne zaman çıkacak" bilgisi. */
 export function dueLabel(card, now = Date.now()) {
   if (card.state === 'new') return 'yeni';
@@ -135,37 +123,20 @@ export function dueLabel(card, now = Date.now()) {
 /**
  * Bir oturumun kart sırası.
  *
- * Sıralama kuralları:
- *  - Vadesi gelmiş tekrarlar önce (birikmemeleri için),
- *  - öğrenme aşamasındakiler zamanı geldikçe araya girer,
- *  - yeni kartlar günlük sınıra kadar sona eklenir.
+ * Havuzun tamamı karıştırılır ve baştan sona çalışılır — vade ya da günlük
+ * sınır gözetilmez. Zamanlama verisi arka planda yine birikir (her cevap
+ * kartın aralığını günceller) ama hangi kartın çıkacağına karışmaz.
  *
  * Aynı kaydın farklı türdeki kartları arka arkaya gelmez: birini görmek
  * diğerinin cevabını verir, o yüzden araları açılır.
  */
-export function buildQueue(cards, { newPerDay, maxReviews, seenNewToday = 0 }, now = Date.now()) {
-  const due = [];
-  const learning = [];
-  const fresh = [];
-
-  for (const c of cards) {
-    if (c.state === 'new') fresh.push(c);
-    else if (c.state === 'learning' || c.state === 'relearning') learning.push(c);
-    else if (c.due <= now) due.push(c);
+export function buildQueue(cards) {
+  const shuffled = [...cards];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-
-  due.sort((a, b) => a.due - b.due);
-  learning.sort((a, b) => a.due - b.due);
-  fresh.sort((a, b) => a.due - b.due);
-
-  const newBudget = Math.max(0, newPerDay - seenNewToday);
-  const queue = [
-    ...learning,
-    ...due.slice(0, maxReviews),
-    ...fresh.slice(0, newBudget),
-  ];
-
-  return spreadSiblings(queue);
+  return spreadSiblings(shuffled);
 }
 
 /** Aynı noteId'ye ait kartları birbirinden uzaklaştırır. */

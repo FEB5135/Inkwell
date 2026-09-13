@@ -4,7 +4,7 @@
 import * as db from './store.js';
 import * as dict from './dict.js';
 import { toMarks, toNumbers, answerMatches, matchesButTone, looksLikePinyin } from './pinyin.js';
-import { schedule, previewLabel, dueLabel, buildQueue, startOfToday, AGAIN, GOOD } from './srs.js';
+import { schedule, dueLabel, buildQueue, startOfToday, AGAIN, GOOD } from './srs.js';
 import { comparePinyin, compareMeaning, suggestGrade, VERDICT_TEXT } from './grade.js';
 import * as strokes from './strokes.js';
 
@@ -103,9 +103,7 @@ function bindStudy() {
     $('study-home').hidden = false;
     renderStudyHome();
   });
-  els('.grade').forEach((b) =>
-    b.addEventListener('click', () => grade(Number(b.dataset.grade)))
-  );
+  $('btn-next').addEventListener('click', advance);
   $('study-deck').addEventListener('change', (e) => {
     db.setSetting('lastDeck', e.target.value);
     state.settings.lastDeck = e.target.value;
@@ -175,59 +173,37 @@ function renderModes() {
   );
 }
 
-async function seenNewToday() {
-  const rows = await db.reviewsSince(startOfToday());
-  return rows.filter((r) => r.wasNew).length;
-}
-
 async function renderStudyHome() {
-  const now = Date.now();
   const cards = scopedCards();
+  const reviewsToday = (await db.reviewsSince(startOfToday())).length;
+  const mature = cards.filter((c) => c.ivl >= 21).length;
+  const notes = new Set(cards.map((c) => c.noteId)).size;
 
-  const fresh = cards.filter((c) => c.state === 'new');
-  const learning = cards.filter((c) => c.state === 'learning' || c.state === 'relearning');
-  const due = cards.filter((c) => c.state === 'review' && c.due <= now);
+  $('count-pool').textContent = cards.length;
+  $('count-today').textContent = reviewsToday;
+  $('count-mature').textContent = mature;
 
-  const usedNew = await seenNewToday();
-  const newLeft = Math.max(0, Math.min(fresh.length, state.settings.newPerDay - usedNew));
-
-  $('count-new').textContent = newLeft;
-  $('count-learn').textContent = learning.length;
-  $('count-due').textContent = due.length;
-
-  const total = newLeft + learning.length + Math.min(due.length, state.settings.maxReviews);
-  $('btn-start').disabled = total === 0;
-  $('btn-start').textContent = total ? `Çalışmaya başla · ${total}` : 'Sırada kart yok';
-  $('study-empty').hidden = total !== 0 || cards.length === 0;
+  $('btn-start').disabled = cards.length === 0;
+  $('btn-start').textContent = cards.length
+    ? `Çalışmaya başla · ${cards.length}`
+    : 'Bu kategoride kart yok';
+  $('study-empty').hidden = cards.length > 0;
 
   const badge = $('tab-badge');
-  badge.hidden = total === 0;
-  badge.textContent = total > 99 ? '99+' : total;
+  badge.hidden = cards.length === 0;
+  badge.textContent = cards.length > 99 ? '99+' : cards.length;
 
-  const reviewsToday = (await db.reviewsSince(startOfToday())).length;
-  const noteCount = new Set(cards.map((c) => c.noteId)).size;
-  const mature = cards.filter((c) => c.ivl >= 21).length;
   $('mini-stats').innerHTML = cards.length
-    ? `<div>Havuzda <b>${noteCount}</b> kayıt, <b>${cards.length}</b> kart.</div>
-       <div>Bugün <b>${reviewsToday}</b> tekrar yapıldı.</div>
+    ? `<div>Bu kategoride <b>${notes}</b> kayıt, <b>${cards.length}</b> kart.</div>
        <div><b>${mature}</b> kart yerleşmiş sayılıyor (3 haftadan uzun aralık).</div>`
     : `<div>Havuz boş. Başlamak için birkaç karakter ekle.</div>`;
-
-  if (!cards.length) {
-    $('study-empty').hidden = false;
-  }
 }
 
 async function startSession() {
-  const usedNew = await seenNewToday();
-  const queue = buildQueue(scopedCards(), {
-    newPerDay: state.settings.newPerDay,
-    maxReviews: state.settings.maxReviews,
-    seenNewToday: usedNew,
-  });
+  const queue = buildQueue(scopedCards());
   if (!queue.length) return;
 
-  state.session = { queue, total: queue.length, done: 0, again: 0 };
+  state.session = { queue, total: queue.length, done: 0, correct: 0 };
   $('study-home').hidden = true;
   $('study-done').hidden = true;
   $('study-session').hidden = false;
@@ -245,7 +221,7 @@ function endSession(silent = false) {
     return;
   }
   $('done-summary').textContent =
-    `${s.done} kart çalışıldı · ${s.again} tanesinde takıldın.`;
+    `${s.done} kart çalışıldı · ${s.correct} doğru.`;
   $('study-done').hidden = false;
   refresh();
 }
@@ -270,7 +246,7 @@ function nextCard() {
   const front = $('card-front');
   const back = $('card-back');
   back.hidden = true;
-  $('grade-row').hidden = true;
+  $('btn-next').hidden = true;
   $('btn-reveal').hidden = false;
   $('answer-verdict').hidden = true;
 
@@ -328,18 +304,23 @@ function revealOrCheck() {
   const note = state.notes.get(card.noteId);
   const answer = TYPES[card.type]?.answer ?? null;
 
+  // Yazma kartı kendi kendine biter (son strok çizilince), burada işi yok.
+  if (answer === 'write') return;
+
   if (answer) {
     const given = $('answer-input').value;
-    if (!given.trim()) return;
 
-    const result =
-      answer === 'pinyin'
+    // Boş bırakıp geçmek "bilmiyorum" demektir; kart yanlış sayılır.
+    const result = !given.trim()
+      ? { level: 'wrong' }
+      : answer === 'pinyin'
         ? comparePinyin(given, note.pinyin)
         : compareMeaning(given, note.meaning);
 
     renderVerdict(result, given, answer === 'pinyin' ? note.pinyin : note.meaning);
     $('answer-input').disabled = true;
     s.autoGrade = suggestGrade(result.level);
+    s.wasCorrect = result.level === 'exact';
   }
 
   reveal(note);
@@ -404,19 +385,25 @@ function reveal(note) {
   back.hidden = false;
 
   $('btn-reveal').hidden = true;
-  $('grade-row').hidden = false;
-
-  const now = Date.now();
-  for (const g of [1, 2, 3, 4]) $(`ivl-${g}`).textContent = previewLabel(card, g, now);
+  $('btn-next').hidden = false;
+  $('btn-next').focus();
 
   if (state.settings.tts) speak(note.hanzi);
 }
 
-async function grade(g) {
+/**
+ * Kartı bitirir ve sıradakine geçer.
+ *
+ * Not artık kullanıcıdan sorulmuyor: cevap zaten yazılıp ölçüldüğü için
+ * doğruya yakınlıktan türetiliyor. Zamanlama verisi arka planda birikmeye
+ * devam ediyor, ama çalışma akışına karışmıyor.
+ */
+async function advance() {
   const s = state.session;
   if (!s || !s.revealed) return;
 
   const card = s.current;
+  const g = s.autoGrade ?? GOOD;
   const wasNew = card.state === 'new';
   const updated = schedule(card, g);
 
@@ -426,21 +413,15 @@ async function grade(g) {
     ts: Date.now(), rating: g, ivl: updated.ivl, wasNew,
   });
 
-  // yerel kopyayı da tazele
   const i = state.cards.findIndex((c) => c.id === card.id);
   if (i >= 0) state.cards[i] = updated;
 
   s.queue.shift();
   s.done++;
-  if (g === AGAIN) s.again++;
-
-  // Öğrenme aşamasındaki kart kısa süre sonra tekrar sıraya girer.
-  if (updated.state === 'learning' || updated.state === 'relearning') {
-    const insertAt = Math.min(s.queue.length, 3);
-    s.queue.splice(insertAt, 0, updated);
-  }
+  if (s.wasCorrect) s.correct++;
 
   s.autoGrade = null;
+  s.wasCorrect = false;
   nextCard();
 }
 
@@ -449,20 +430,11 @@ function bindKeys() {
     if (!state.session || state.screen !== 'study') return;
     const typing = document.activeElement === $('answer-input') && !$('answer-input').disabled;
 
-    if (e.key === ' ' && !typing) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') {
+      if (e.key === ' ' && typing) return;   // cevap yazarken boşluk gerekebilir
       e.preventDefault();
-      if (state.session.revealed) grade(GOOD);
+      if (state.session.revealed) advance();
       else revealOrCheck();
-      return;
-    }
-    if (e.key === 'Enter' && state.session.revealed) {
-      e.preventDefault();
-      grade(state.session.autoGrade ?? GOOD);
-      return;
-    }
-    if (!typing && ['1', '2', '3', '4'].includes(e.key) && state.session.revealed) {
-      e.preventDefault();
-      grade(Number(e.key));
     }
   });
 }
@@ -578,6 +550,7 @@ function finishWrite(mistakes) {
       ? 'Hatasız'
       : `${VERDICT_TEXT[level]}<div class="verdict-detail"><small>${mistakes} strok hatası</small></div>`;
 
+  s.wasCorrect = level === 'exact';
   $('write-status').textContent = '';
   el('.write-actions').hidden = true;
   els('.write-cell').forEach((c) => c.classList.remove('is-active'));
@@ -1071,8 +1044,6 @@ function bindSettings() {
   $('opt-type-meaning').checked = s.types.includes('meaning');
   $('opt-type-recall').checked = s.types.includes('recall');
   $('opt-type-write').checked = s.types.includes('write');
-  $('opt-new').value = s.newPerDay;
-  $('opt-max').value = s.maxReviews;
   $('opt-tts').checked = s.tts;
 
   const syncTypes = async () => {
@@ -1097,18 +1068,6 @@ function bindSettings() {
     $(id).addEventListener('change', syncTypes)
   );
 
-  $('opt-new').addEventListener('change', async (e) => {
-    const v = Math.max(0, Number(e.target.value) || 0);
-    state.settings.newPerDay = v;
-    await db.setSetting('newPerDay', v);
-    renderStudyHome();
-  });
-  $('opt-max').addEventListener('change', async (e) => {
-    const v = Math.max(10, Number(e.target.value) || 150);
-    state.settings.maxReviews = v;
-    await db.setSetting('maxReviews', v);
-    renderStudyHome();
-  });
   $('opt-tts').addEventListener('change', async (e) => {
     state.settings.tts = e.target.checked;
     await db.setSetting('tts', e.target.checked);

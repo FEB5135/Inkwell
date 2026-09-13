@@ -259,8 +259,6 @@ export async function reviewsSince(ts) {
 const DEFAULTS = {
   types: ['pinyin', 'meaning', 'recall'],
   mode: 'all',
-  newPerDay: 15,
-  maxReviews: 150,
   tts: false,
   lastDeck: null,
 };

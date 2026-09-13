@@ -33,19 +33,21 @@ Yani 100 karakter girince 300 kart olur, tek tek kart hazırlamazsın.
 Üçünde de cevabı **yazarsın**. Kafadan cevaplayıp kendine not vermek
 güvenilir değil: insan bildiğini sanır. Yazılan cevap ölçülebilir.
 
-**Not, doğruya yakınlığa göre önerilir.** Bir hecenin tonunu kaçırmakla
-sözcüğü hiç bilmemek aynı şey değil:
+**Cevap doğruya yakınlığına göre değerlendirilir.** Bir hecenin tonunu
+kaçırmakla sözcüğü hiç bilmemek aynı şey değil:
 
-| Cevap | Sonuç | Önerilen |
-|---|---|---|
-| `lao3shi1` | Doğru | İyi |
-| `lao2shi1` | Ton yanlış — hangi hece olduğu işaretlenir | Zor |
-| `lao3si1` | Neredeyse (bir harf sapma) | Zor |
-| başka bir şey | Yanlış | Tekrar |
+| Cevap | Sonuç |
+|---|---|
+| `lao3shi1` | Doğru |
+| `lao2shi1` | Ton yanlış — hangi hece olduğu işaretlenir |
+| `lao3si1` | Neredeyse (bir harf sapma) |
+| başka bir şey | Yanlış |
 
-Öneriyi Enter'la kabul edersin ya da başka bir not verirsin. Anlam
-kartlarında eşleşme esnektir: kayıttaki karşılıklardan herhangi biri tutarsa
-doğru sayılır ("a teacher" ↔ "teacher; instructor").
+Anlam kartlarında eşleşme esnektir: kayıttaki karşılıklardan herhangi biri
+tutarsa doğru sayılır ("a teacher" ↔ "teacher; instructor"). Boş bırakıp
+geçmek "bilmiyorum" demektir.
+
+Klavye: **Enter** cevabı kontrol eder, tekrar **Enter** sonraki karta geçer.
 
 Karakteri klavyeyle yazdıramadığımız için (Çince klavye gerekir) Üretim
 kartında karakterin doğrulaması sende: hatırlamadıysan düşük not verirsin.
@@ -59,9 +61,13 @@ varsayılan olarak kapalı — tablette Ayarlar'dan açarsın.
 Strok verisi 9.574 karakteri kapsıyor. Kapsamayan bir karakterde kart elle
 değerlendirmeye düşer.
 
-**Aralıklı tekrar.** SM-2 türevi bir algoritma her kartı ne zaman tekrar
-göstereceğine son performansına bakarak karar verir. Bildiğin karakter
-aylarca çıkmaz, takıldığın her gün çıkar.
+**Havuzun tamamı, karışık sırayla.** Çalışmaya başlayınca seçtiğin
+kategorideki bütün kartlar karıştırılıp baştan sona gelir. Cevabı yazarsın,
+sonuç görünür, oka basıp devam edersin. Havuz bitince oturum biter.
+
+Aralıklı tekrar verisi arka planda yine birikiyor (her cevap kartın aralığını
+güncelliyor) ama hangi kartın çıkacağına karışmıyor. Not sorulmuyor: cevap
+zaten yazılıp ölçüldüğü için doğruya yakınlıktan türetiliyor.
 
 **Çince klavye gerekmez.** Yalnız okunuşu yazarsın, karakter ve anlam kendi
 gelir:

@@ -28,16 +28,16 @@
 
       <div class="queue-grid">
         <div class="queue-stat queue-stat--new">
-          <span class="queue-num" id="count-new">0</span>
-          <span class="queue-label">yeni</span>
+          <span class="queue-num" id="count-pool">0</span>
+          <span class="queue-label">kart</span>
         </div>
         <div class="queue-stat queue-stat--learn">
-          <span class="queue-num" id="count-learn">0</span>
-          <span class="queue-label">öğrenilen</span>
+          <span class="queue-num" id="count-today">0</span>
+          <span class="queue-label">bugün</span>
         </div>
         <div class="queue-stat queue-stat--due">
-          <span class="queue-num" id="count-due">0</span>
-          <span class="queue-label">tekrar</span>
+          <span class="queue-num" id="count-mature">0</span>
+          <span class="queue-label">yerleşmiş</span>
         </div>
       </div>
 
@@ -99,12 +99,9 @@
 
       <div class="card-actions">
         <button class="btn btn--primary btn--xl" id="btn-reveal">Göster</button>
-        <div class="grade-row" id="grade-row" hidden>
-          <button class="grade grade--again" data-grade="1"><b>Tekrar</b><i id="ivl-1"></i></button>
-          <button class="grade grade--hard"  data-grade="2"><b>Zor</b><i id="ivl-2"></i></button>
-          <button class="grade grade--good"  data-grade="3"><b>İyi</b><i id="ivl-3"></i></button>
-          <button class="grade grade--easy"  data-grade="4"><b>Kolay</b><i id="ivl-4"></i></button>
-        </div>
+        <button class="btn btn--primary btn--xl btn--next" id="btn-next" hidden>
+          Sonraki <span aria-hidden="true">→</span>
+        </button>
       </div>
     </div>
 
@@ -219,14 +216,6 @@ lao3shi1 öğretmen
         <span><b>Üretim</b><i>anlam → okunuşu yaz, karakteri hatırla</i></span></label>
       <label class="check"><input type="checkbox" id="opt-type-write">
         <span><b>Yazma</b><i>anlam → karakteri kalemle çiz (dokunmatik ekran gerekir)</i></span></label>
-    </div>
-
-    <div class="setting-group">
-      <h2 class="group-title">Günlük sınır</h2>
-      <label class="field-label" for="opt-new">Günde yeni kart</label>
-      <input type="number" id="opt-new" class="input input--num" min="0" max="200">
-      <label class="field-label" for="opt-max">Günde en fazla tekrar</label>
-      <input type="number" id="opt-max" class="input input--num" min="10" max="999">
     </div>
 
     <div class="setting-group">

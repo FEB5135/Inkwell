@@ -348,6 +348,123 @@ export async function exportAll() {
   };
 }
 
+/** İçe aktarmada korunan, cihaza özgü ayarlar. */
+const DEVICE_LOCAL = new Set(['lang', 'theme', 'lastDeck', 'studyDeck', 'mode']);
+
+/**
+ * Aynı karakterin iki cihazda ayrı ayrı eklenmiş kopyalarını birleştirir.
+ *
+ * Birleştirme `id` üzerinden yapılıyor; aynı karakteri iki cihazda elle
+ * eklersen iki ayrı `id` oluşur ve yedekler üst üste binince havuzda iki 猫
+ * belirir. Ekleme akışındaki `findByHanzi` bunu yalnız tek cihazda önlüyor.
+ *
+ * Kural her iki cihazda da aynı sonucu vermeli, yoksa yedekler gidip gelirken
+ * yakınsamaz: kazanan, karakterin **en eski** kaydı (eşitlikte küçük `id`).
+ * Kartlarda ise tür tür en çok çalışılmış olan tutulur — kopyalardan biri
+ * bilgisayarda, diğeri tablette çalışılmış olabilir, geçmişin çok olanı
+ * saklamak öğrenmeyi bozmaz.
+ *
+ * Saf işlev: aynı girdi her yerde aynı planı üretir, sınanabilir.
+ */
+export function planDedupe(notes, cards) {
+  const liveNotes = (notes ?? []).filter((n) => !n.deleted);
+  const liveCards = (cards ?? []).filter((c) => !c.deleted);
+
+  const byHanzi = new Map();
+  for (const n of liveNotes) {
+    const key = String(n.hanzi ?? '').trim();
+    if (!key) continue;
+    if (!byHanzi.has(key)) byHanzi.set(key, []);
+    byHanzi.get(key).push(n);
+  }
+
+  const cardsOf = new Map();
+  for (const c of liveCards) {
+    if (!cardsOf.has(c.noteId)) cardsOf.set(c.noteId, []);
+    cardsOf.get(c.noteId).push(c);
+  }
+
+  // Daha çok çalışılmış kart: tekrar sayısı, sonra son görülme, sonra aralık.
+  // Son ölçüt `id`, yalnız berabereliği deterministik bozmak için.
+  const stronger = (a, b) =>
+    (b.reps ?? 0) - (a.reps ?? 0) ||
+    (b.lastReview ?? 0) - (a.lastReview ?? 0) ||
+    (b.ivl ?? 0) - (a.ivl ?? 0) ||
+    (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+
+  const older = (a, b) =>
+    (a.createdAt ?? 0) - (b.createdAt ?? 0) ||
+    (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+
+  const plan = { keeps: [], droppedNotes: [], movedCards: [], droppedCards: [] };
+
+  for (const group of byHanzi.values()) {
+    if (group.length < 2) continue;
+
+    const [winner, ...losers] = [...group].sort(older);
+    plan.keeps.push(winner.id);
+    plan.droppedNotes.push(...losers.map((n) => n.id));
+
+    const candidates = group.flatMap((n) => cardsOf.get(n.id) ?? []);
+    const byType = new Map();
+    for (const c of candidates) {
+      if (!byType.has(c.type)) byType.set(c.type, []);
+      byType.get(c.type).push(c);
+    }
+
+    for (const sameType of byType.values()) {
+      const [best, ...rest] = [...sameType].sort(stronger);
+      if (best.noteId !== winner.id) plan.movedCards.push({ id: best.id, noteId: winner.id });
+      plan.droppedCards.push(...rest.map((c) => c.id));
+    }
+  }
+  return plan;
+}
+
+/** planDedupe'un çıkardığı planı yazar; birleştirilen kayıt sayısını döner. */
+export async function applyDedupe(plan) {
+  if (!plan.droppedNotes.length) return 0;
+  const now = Date.now();
+
+  await tx(['cards'], 'readwrite', (s) => {
+    for (const { id, noteId } of plan.movedCards) {
+      const req = s.get(id);
+      req.onsuccess = () => {
+        const c = req.result;
+        if (!c) return;
+        c.noteId = noteId;
+        c.updatedAt = now;
+        s.put(c);
+      };
+    }
+    for (const id of plan.droppedCards) {
+      const req = s.get(id);
+      req.onsuccess = () => {
+        const c = req.result;
+        if (!c) return;
+        c.deleted = true;
+        c.updatedAt = now;
+        s.put(c);
+      };
+    }
+  });
+
+  await tx(['notes'], 'readwrite', (s) => {
+    for (const id of plan.droppedNotes) {
+      const req = s.get(id);
+      req.onsuccess = () => {
+        const n = req.result;
+        if (!n) return;
+        n.deleted = true;
+        n.updatedAt = now;
+        s.put(n);
+      };
+    }
+  });
+
+  return plan.droppedNotes.length;
+}
+
 /**
  * İçe aktarma birleştiricidir, silici değil: aynı id'den iki sürüm varsa
  * `updatedAt` değeri büyük olan kazanır. Böylece iki cihazın yedeklerini
@@ -356,7 +473,7 @@ export async function exportAll() {
 export async function importAll(data) {
   // Arayüz çevirisini veri katmanına taşımamak için kod fırlatılıyor.
   if (data?.app !== 'inkwell') throw new Error('notBackup');
-  const stats = { decks: 0, notes: 0, cards: 0, reviews: 0 };
+  const stats = { decks: 0, notes: 0, cards: 0, reviews: 0, merged: 0 };
 
   const mergeInto = (storeName, rows, counter) =>
     tx([storeName], 'readwrite', (s) => {
@@ -381,9 +498,23 @@ export async function importAll(data) {
       stats.reviews++;
     }
   });
+  // Cihaza ait tercihler yedekten gelmez: bilgisayarın yedeğini tablete
+  // yüklemek tabletin dilini, temasını ya da baktığın desteyi değiştirmemeli.
+  // Yedeğin işi kartları taşımak.
   await tx(['meta'], 'readwrite', (s) => {
-    for (const row of data.meta ?? []) s.put(row);
+    for (const row of data.meta ?? []) {
+      if (DEVICE_LOCAL.has(row.key)) continue;
+      s.put(row);
+    }
   });
+
+  // Birleşme bittikten sonra: aynı karakterin iki cihazdan gelen kopyaları
+  // ancak her ikisi de havuzdayken görülebilir.
+  const [allNotes, allCards] = await Promise.all([
+    tx(['notes'], 'readonly', (s) => asArray(s)),
+    tx(['cards'], 'readonly', (s) => asArray(s)),
+  ]);
+  stats.merged = await applyDedupe(planDedupe(allNotes, allCards));
 
   return stats;
 }

@@ -153,7 +153,29 @@ gönderilmeli, `mouseup` belgeye.
 **Gömülü tarayıcıda servis çalışanı kaydolmaz.** Konsoldaki "unknown error
 when fetching the script" bundan; gerçek tarayıcıda sorun değil.
 
+**Servis çalışanı kabuğu artık önce ağdan alıyor.** Önce önbellekten sunarken
+kod değişikliği hep bir açılış gecikmeli geliyordu; geliştirirken eski `app.js`
+sunulduğu için yok olmayan hatalar kovalanıyordu. Çevrimdışılık önbellek
+yedeğiyle duruyor. Sözlük hâlâ önce önbellekten (6,8 MB).
+
 ---
+
+## Yedek ve eşitleme
+
+Dışa aktarma tarayıcıda blob bağlantısıyla iniyor; **Android'de inmiyor**,
+WebView'da indirme dinleyicisi yok. Orada dosya `Directory.CACHE`'e yazılıp
+paylaşım penceresi açılıyor (`@capacitor/filesystem` + `@capacitor/share`).
+Eklentilere `Capacitor.registerPlugin` ile köprü üstünden ulaşılıyor — JS
+paketini `import` etmek paketleyici gerektirirdi, projenin derleme adımı yok.
+
+İçe aktarma `id` üzerinden birleştiriyordu; aynı karakteri iki cihazda elle
+eklemek mükerrer kayıt üretiyordu. `planDedupe` bunu tekliyor: kazanan en eski
+kayıt (eşitlikte küçük `id`), kartlarda tür tür en çok çalışılmış olan kalır.
+Kural saf ve deterministik — iki cihaz aynı sonuca varmazsa yedekler gidip
+gelirken yakınsamaz.
+
+Cihaza ait ayarlar (`lang`, `theme`, `lastDeck`, `studyDeck`, `mode`) yedekten
+gelmez; yedeğin işi kartları taşımak.
 
 ## Sırada
 

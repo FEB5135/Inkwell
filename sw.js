@@ -8,9 +8,10 @@
  *    indirmek, uygulamayı ilk açışta gereksiz yere bekletirdi.
  */
 
-const VERSION = 'v1';
-const SHELL = `inkwell-shell-${VERSION}`;
-const DATA = `inkwell-data-${VERSION}`;
+// Kabuk ile veri ayrı sürümleniyor: kabuk değiştiğinde 6,8 MB'lık sözlüğü
+// yeniden indirtmenin anlamı yok.
+const SHELL = 'inkwell-shell-v2';
+const DATA = 'inkwell-data-v1';
 
 const SHELL_FILES = [
   './',
@@ -68,17 +69,26 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Kabuk: önce önbellek, arkada tazeleme.
+  // Kabuk: önce ağ, olmazsa önbellek.
+  //
+  // Önce önbellekten sunuyordu, tazeleme arkada kalıyordu: güncelleme hep bir
+  // açılış gecikmeli geliyor, hızlı yeniden yüklemelerde ise sayfa kapanınca
+  // `cache.put` yarıda kaldığı için hiç gelmiyordu. Bu uygulamada "ağ" ya
+  // yerel sunucu ya da APK'nın kendi varlıkları — pratikte hep hazır, o yüzden
+  // önce ağa gitmek maliyetsiz, çevrimdışılık da önbellek yedeğiyle duruyor.
   e.respondWith(
     caches.open(SHELL).then(async (cache) => {
-      const hit = await cache.match(request, { ignoreSearch: true });
-      const net = fetch(request)
-        .then((res) => {
-          if (res.ok) cache.put(request, res.clone());
-          return res;
-        })
-        .catch(() => hit);
-      return hit ?? net;
+      try {
+        const res = await fetch(request);
+        // waitUntil: yazma bitene kadar servis çalışanı ayakta kalsın, yoksa
+        // sayfa yenilenirken önbellek güncellemesi yarıda kalıyor.
+        if (res.ok) e.waitUntil(cache.put(request, res.clone()));
+        return res;
+      } catch (err) {
+        const hit = await cache.match(request, { ignoreSearch: true });
+        if (hit) return hit;
+        throw err;
+      }
     })
   );
 });

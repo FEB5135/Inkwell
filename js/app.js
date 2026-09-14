@@ -1284,16 +1284,68 @@ function updateTtsStatus() {
   node.textContent = v ? t('set.ttsVoice', { name: v.name }) : t('set.ttsNone');
 }
 
+const isNative = () => Boolean(window.Capacitor?.isNativePlatform?.());
+
+/**
+ * Native eklentiye köprü üstünden ulaşıyoruz.
+ *
+ * Eklentinin JS paketini `import` etmek çıplak modül adı demek, o da paketleyici
+ * demek; projenin derleme adımı yok. `registerPlugin` ise Capacitor'ın kendi
+ * global'inde duruyor ve yöntemleri native tarafın bildirdiği başlıklardan
+ * çözüyor — paketleyiciye gerek kalmıyor.
+ */
+const nativePlugin = (name) => window.Capacitor?.registerPlugin?.(name);
+
+/**
+ * Yedeği dışarı verir.
+ *
+ * Tarayıcıda blob bağlantısıyla iniyor. Android'de inmiyordu: WebView'da
+ * indirme dinleyicisi tanımlı değil, blob bağlantısını native tarafa hiç
+ * çeviremiyor, düğme sessizce hiçbir şey yapmıyordu. Orada dosya önbellek
+ * dizinine yazılıp paylaşım penceresi açılıyor; kullanıcı e-postaya, Drive'a,
+ * nereye isterse gönderiyor.
+ */
 async function exportBackup() {
   const data = await db.exportAll();
-  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `inkwell-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  const json = JSON.stringify(data);
+  const name = `inkwell-${new Date().toISOString().slice(0, 10)}.json`;
+
+  try {
+    if (isNative()) await shareBackup(name, json);
+    else downloadBackup(name, json);
+  } catch (err) {
+    console.error(err);
+    toast(t('toast.exportFail'));
+    return;
+  }
+
   $('backup-status').textContent =
     t('set.lastBackup', { date: new Date().toLocaleString(getLang()), n: data.notes.length });
+}
+
+function downloadBackup(name, json) {
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+async function shareBackup(name, json) {
+  const Filesystem = nativePlugin('Filesystem');
+  const Share = nativePlugin('Share');
+  if (!Filesystem || !Share) throw new Error('no bridge');
+
+  // Önbellek dizini: uygulamanın FileProvider ayarı (`file_paths.xml`) burayı
+  // kapsıyor, paylaşım için okunabilir bir içerik adresi ancak böyle çıkıyor.
+  const { uri } = await Filesystem.writeFile({
+    path: name,
+    data: json,
+    directory: 'CACHE',
+    encoding: 'utf8',
+  });
+  await Share.share({ title: name, files: [uri], dialogTitle: t('set.shareBackup') });
 }
 
 async function importBackup(e) {
@@ -1305,7 +1357,11 @@ async function importBackup(e) {
     state.settings = await db.getSettings();
     state.decks = await db.allDecks();
     await refresh();
-    toast(t('toast.merged', { n: stats.notes }));
+    // Mükerrer birleşmesi sessiz kalmamalı: havuzdaki kayıt sayısı düştüğü
+    // için kullanıcı bir şey silindi sanabilir.
+    toast(stats.merged
+      ? `${t('toast.merged', { n: stats.notes })} · ${t('toast.deduped', { n: stats.merged })}`
+      : t('toast.merged', { n: stats.notes }));
   } catch (err) {
     // Yedek olmayan dosyayı ayrı söylüyoruz: "okunamadı" demek, yanlış dosyayı
     // seçtiğini fark etmeyi zorlaştırıyor.

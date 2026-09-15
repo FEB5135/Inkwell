@@ -1075,11 +1075,14 @@ const POOL_WARN_AT = 100;
 
 async function maybeWarnPool() {
   if (state.settings.poolWarned) return;
-  if (state.cards.length < POOL_WARN_AT) return;
+  // Eşik kart değil **karakter** sayısında: eklediğin şey bir karakter, üç
+  // kart değil. Kartla sayınca 100 kart ≈ 34 karakter ediyordu ve uyarı,
+  // kullanıcının saydığı sayıyla hiç örtüşmüyordu.
+  if (state.notes.size < POOL_WARN_AT) return;
 
   state.settings.poolWarned = true;
   await db.setSetting('poolWarned', true);
-  await askConfirm(t('pool.warnTitle', { n: state.cards.length }), t('pool.warnText'), {
+  await askConfirm(t('pool.warnTitle', { n: state.notes.size }), t('pool.warnText'), {
     ok: t('dialog.gotIt'),
     cancel: false,
   });

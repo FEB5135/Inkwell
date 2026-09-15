@@ -117,6 +117,9 @@ function bindStudy() {
   $('study-deck').addEventListener('change', (e) => {
     db.setSetting('studyDeck', e.target.value);
     state.settings.studyDeck = e.target.value;
+    // Kategori rozetleri de desteye bağlı; yalnız renderStudyHome çağrılınca
+    // düğme yeni desteyi, rozetler eski desteyi gösteriyordu.
+    renderModes();
     renderStudyHome();
   });
   // Enter'ı yalnız bindKeys dinliyor. Burada ikinci bir dinleyici daha vardı:

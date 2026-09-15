@@ -1,23 +1,21 @@
 /* ═══════════════════════════════════════════════
    Inkwell — kağıt & mürekkep
-   Vurgu, maviye çalan bir kırmızı: karmen. Sıcak zencifre kırmızısı sarı
-   kağıtla birleşince soluk ve tozlu duruyordu; serin bir zemin üstünde soğuk
-   kırmızı hem daha canlı hem daha keskin. İkincil vurgu mavi — aynı ailenin
-   iki ucu, "kolay" ve arka plandaki ışıma ondan geliyor.
-   Koyu tema: aynı palet tersine çevrilmiş, serinlik korunarak.
+   Zemin ve mürekkep tamamen nötr: açık tema düz beyaz, koyu tema düz siyah.
+   Gri tonlarının hiçbirinde renk yok — en ufak sıcaklık bile geniş yüzeyde
+   kahverengiye çalıyordu. Renk yalnız vurgularda: karmen, mavi, mor, yeşil.
    ═══════════════════════════════════════════════ */
 
 :root {
   color-scheme: light;
 
-  --paper:      #f5f3f7;   /* kağıt, serin tarafa çalar */
+  --paper:      #ffffff;   /* düz beyaz — tonu yok */
   --paper-2:    #ffffff;
-  --paper-sunk: #eae6f0;
-  --ink:        #15131c;
-  --ink-2:      #474355;
-  --ink-3:      #7c778c;
-  --rule:       #e2dded;
-  --rule-2:     #cac3da;
+  --paper-sunk: #f2f2f2;
+  --ink:        #111111;
+  --ink-2:      #4a4a4a;
+  --ink-3:      #7c7c7c;
+  --rule:       #e3e3e3;
+  --rule-2:     #cfcfcf;
 
   --seal:       #b81d43;   /* karmen — maviye çalan kırmızı */
   --seal-deep:  #8d1233;
@@ -29,14 +27,12 @@
   --jade:       #1f7a63;   /* doğru */
   --amber:      #7a4e9e;   /* zor — mavi ile kırmızı arası */
   --slate:      #3f5fa6;   /* kolay — ikincil vurgu */
-  --hairline:   #a9a0cc;   /* ince başlık çizgileri */
-  --wash-1:     rgba(184,29,67,.09);
-  --wash-2:     rgba(63,95,166,.09);
+  --hairline:   #d4d4d4;   /* ince başlık çizgileri */
 
-  --radius:     14px;
-  --radius-sm:  9px;
-  --shadow:     0 1px 2px rgba(21,19,28,.06), 0 6px 20px -8px rgba(21,19,28,.16);
-  --shadow-lg:  0 2px 4px rgba(21,19,28,.07), 0 18px 40px -16px rgba(21,19,28,.24);
+  --radius:     11px;
+  --radius-sm:  7px;
+  --shadow:     0 1px 2px rgba(0,0,0,.05), 0 4px 14px -8px rgba(0,0,0,.12);
+  --shadow-lg:  0 2px 4px rgba(0,0,0,.06), 0 14px 32px -16px rgba(0,0,0,.18);
 
   --ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --han: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", "Noto Serif CJK SC",
@@ -49,14 +45,14 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --paper:      #141219;
-    --paper-2:    #1d1a25;
-    --paper-sunk: #0f0e14;
-    --ink:        #f0edf6;
-    --ink-2:      #b5b0c4;
-    --ink-3:      #807b90;
-    --rule:       #2a2634;
-    --rule-2:     #3a3549;
+    --paper:      #000000;
+    --paper-2:    #121212;
+    --paper-sunk: #0a0a0a;
+    --ink:        #f2f2f2;
+    --ink-2:      #b0b0b0;
+    --ink-3:      #7e7e7e;
+    --rule:       #272727;
+    --rule-2:     #3b3b3b;
     --seal:       #ef7191;
     --seal-deep:  #b52348;
     --seal-soft:  #331a25;
@@ -65,9 +61,7 @@
     --jade:       #4fb193;
     --amber:      #b98ede;
     --slate:      #7f9fe4;
-    --hairline:   #6f6790;
-    --wash-1:     rgba(239,113,145,.10);
-    --wash-2:     rgba(127,159,228,.08);
+    --hairline:   #3a3a3a;
     --shadow:     0 1px 2px rgba(0,0,0,.45), 0 6px 20px -8px rgba(0,0,0,.65);
     --shadow-lg:  0 2px 4px rgba(0,0,0,.5), 0 18px 40px -16px rgba(0,0,0,.75);
   }
@@ -75,13 +69,12 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --paper: #141219; --paper-2: #1d1a25; --paper-sunk: #0f0e14;
-  --ink: #f0edf6; --ink-2: #b5b0c4; --ink-3: #807b90;
-  --rule: #2a2634; --rule-2: #3a3549;
+  --paper: #000000; --paper-2: #121212; --paper-sunk: #0a0a0a;
+  --ink: #f2f2f2; --ink-2: #b0b0b0; --ink-3: #7e7e7e;
+  --rule: #272727; --rule-2: #3b3b3b;
   --seal: #ef7191; --seal-deep: #b52348; --seal-soft: #331a25;
   --seal-fill-a: #b52348; --seal-fill-b: #8a1436;
-  --jade: #4fb193; --amber: #b98ede; --slate: #7f9fe4; --hairline: #6f6790;
-  --wash-1: rgba(239,113,145,.10); --wash-2: rgba(127,159,228,.08);
+  --jade: #4fb193; --amber: #b98ede; --slate: #7f9fe4; --hairline: #3a3a3a;
   --shadow: 0 1px 2px rgba(0,0,0,.45), 0 6px 20px -8px rgba(0,0,0,.65);
   --shadow-lg: 0 2px 4px rgba(0,0,0,.5), 0 18px 40px -16px rgba(0,0,0,.75);
 }
@@ -102,33 +95,20 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* dokulu kağıt hissi: çok hafif bir gren */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: .7;
-  background-image:
-    radial-gradient(ellipse 120% 55% at 50% -8%, var(--wash-1), transparent 70%),
-    radial-gradient(ellipse 90% 40% at 100% 100%, var(--wash-2), transparent 70%);
-}
-
 .app {
   position: relative;
   z-index: 1;
   max-width: 620px;
   margin: 0 auto;
-  padding: 0 20px calc(var(--bar-h) + env(safe-area-inset-bottom) + 24px);
+  padding: 0 14px calc(var(--bar-h) + env(safe-area-inset-bottom) + 18px);
   min-height: 100%;
 }
 
 [hidden] { display: none !important; }
 
 /* ─── başlıklar ─── */
-.page-head { padding: 28px 0 20px; }
-.page-head h1 { margin: 0; font-size: 1.6rem; letter-spacing: -.02em; font-weight: 650; }
+.page-head { padding: 16px 0 12px; }
+.page-head h1 { margin: 0; font-size: 1.45rem; letter-spacing: -.02em; font-weight: 650; }
 .wordmark {
   display: flex;
   align-items: center;
@@ -139,7 +119,7 @@ body::before {
 }
 .wordmark img { display: block; flex: none; border-radius: 8px; }
 
-.subtitle { margin: 4px 0 0; color: var(--ink-3); font-size: .92rem; }
+.subtitle { margin: 2px 0 0; color: var(--ink-3); font-size: .92rem; }
 .group-title {
   display: flex;
   align-items: center;
@@ -161,8 +141,8 @@ body::before {
 .queue-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin: 4px 0 22px;
+  gap: 8px;
+  margin: 2px 0 14px;
 }
 .queue-stat {
   position: relative;
@@ -170,7 +150,7 @@ body::before {
   background: var(--paper-2);
   border: 1px solid var(--rule);
   border-radius: var(--radius);
-  padding: 16px 12px;
+  padding: 11px 8px;
   text-align: center;
   box-shadow: var(--shadow);
 }
@@ -187,12 +167,12 @@ body::before {
 .queue-stat--new  { color: var(--slate); }
 .queue-stat--learn { color: var(--amber); }
 .queue-stat--due  { color: var(--seal); }
-.queue-num { display: block; font-size: 1.9rem; font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.queue-num { display: block; font-size: 1.6rem; font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .queue-label { font-size: .78rem; color: var(--ink-3); letter-spacing: .03em; }
 .queue-num { color: currentColor; }
 
 .mini-stats {
-  margin-top: 26px;
+  margin-top: 16px;
   font-size: .85rem;
   color: var(--ink-3);
   display: grid;
@@ -207,7 +187,7 @@ body::before {
   text-transform: uppercase;
   letter-spacing: .07em;
   color: var(--ink-3);
-  margin: 14px 0 6px;
+  margin: 10px 0 4px;
   font-weight: 600;
 }
 .input, .select, .textarea {
@@ -217,7 +197,7 @@ body::before {
   background: var(--paper-2);
   border: 1px solid var(--rule-2);
   border-radius: var(--radius-sm);
-  padding: 11px 13px;
+  padding: 9px 11px;
   transition: border-color .15s, box-shadow .15s;
 }
 .input:focus, .select:focus, .textarea:focus {
@@ -236,7 +216,7 @@ body::before {
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
 }
-.deck-picker { margin-bottom: 18px; }
+.deck-picker { margin-bottom: 12px; }
 .deck-compact {
   display: flex;
   align-items: baseline;
@@ -254,7 +234,7 @@ body::before {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  padding: 11px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--rule);
   cursor: pointer;
 }
@@ -274,7 +254,7 @@ body::before {
   font-weight: 600;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  padding: 11px 18px;
+  padding: 9px 15px;
   cursor: pointer;
   transition: transform .08s, filter .15s, background .15s;
 }
@@ -296,7 +276,7 @@ body::before {
 .btn--ghost { background: var(--paper-2); color: var(--ink); border-color: var(--rule-2); }
 .btn--ghost:hover { background: var(--paper-sunk); }
 .btn--sm { padding: 8px 12px; font-size: .88rem; }
-.btn--xl { width: 100%; padding: 16px; font-size: 1.05rem; border-radius: var(--radius); }
+.btn--xl { width: 100%; padding: 13px; font-size: 1.05rem; border-radius: var(--radius); }
 .linkish {
   background: none; border: 0; padding: 0; font: inherit;
   color: var(--seal); text-decoration: underline; cursor: pointer;
@@ -316,8 +296,8 @@ body::before {
 .modes {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 6px;
+  margin-bottom: 12px;
 }
 .mode {
   flex: none;
@@ -328,7 +308,7 @@ body::before {
   background: var(--paper-2);
   border: 1px solid var(--rule-2);
   border-radius: 99px;
-  padding: 8px 14px;
+  padding: 6px 11px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -390,8 +370,8 @@ body::before {
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
-  padding: 26px 22px 30px;
-  margin: 8px 0 18px;
+  padding: 20px 16px 22px;
+  margin: 6px 0 12px;
   min-height: 46vh;
   display: flex;
   flex-direction: column;
@@ -647,20 +627,20 @@ body::before {
    anlam satırı sayfayı yana taşırırdı. */
 .notes {
   list-style: none;
-  margin: 16px 0 0;
+  margin: 12px 0 0;
   padding: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 .note {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 11px;
   background: var(--paper-2);
   border: 1px solid var(--rule);
   border-radius: var(--radius-sm);
-  padding: 11px 13px;
+  padding: 8px 10px;
 }
 .is-selectable .note { cursor: pointer; }
 .note.is-picked { border-color: var(--seal); background: var(--paper-sunk); }
@@ -709,7 +689,7 @@ body::before {
 .bulk-bar > .select { flex: 1; min-width: 7em; }
 .bulk-count { font-size: .85rem; font-weight: 600; color: var(--ink-2); }
 
-.deck-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.deck-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 5px; }
 .deck-row {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px;
@@ -725,8 +705,8 @@ body::before {
   background: var(--paper-2);
   border: 1px solid var(--rule);
   border-radius: var(--radius);
-  padding: 16px 16px 18px;
-  margin-bottom: 14px;
+  padding: 12px 13px 13px;
+  margin-bottom: 10px;
 }
 .colophon { text-align: center; font-size: .78rem; color: var(--ink-3); padding: 8px 0 20px; }
 .colophon a { color: var(--ink-3); }
@@ -814,7 +794,7 @@ body::before {
   max-width: min(420px, calc(100vw - 32px));
   width: 100%;
 }
-.dialog::backdrop { background: rgba(12,10,18,.55); backdrop-filter: blur(2px); }
+.dialog::backdrop { background: rgba(0,0,0,.55); backdrop-filter: blur(2px); }
 .dialog[open] { animation: dialog-in .16s ease-out; }
 @keyframes dialog-in {
   from { opacity: 0; transform: translateY(8px) scale(.98); }

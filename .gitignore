@@ -25,3 +25,6 @@ android/capacitor-cordova-android-plugins/
 # depoya koymanın anlamı yok. cedict.tsv ise dış bir adresten indiriliyor
 # ve zamanla değişiyor, o yüzden o depoda duruyor.
 data/strokes.txt
+
+# tek seferlik test listeleri
+test-*.txt

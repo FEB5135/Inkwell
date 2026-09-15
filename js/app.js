@@ -574,8 +574,12 @@ async function setupWriters(note) {
       showCharacter: false,
       showOutline: false,
       showHintAfterMisses: 3,
+      // Kalem de mürekkep rengiyle çiziyor: çizdiğin strok tamamlanmış
+      // strokla aynı renk, karakter tek renkte birikiyor. Koyu temada
+      // "siyah" düz siyah olamaz — zemin zaten siyah; --ink orada beyaza
+      // döndüğü için kalem görünür kalıyor.
       strokeColor: cssVar('--ink'),
-      drawingColor: cssVar('--accent'),
+      drawingColor: cssVar('--ink'),
       outlineColor: cssVar('--rule-2'),
       highlightColor: cssVar('--amber'),
       drawingWidth: 22,

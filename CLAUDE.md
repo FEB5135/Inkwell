@@ -90,7 +90,16 @@ bozulmasın diye gösterimi duruyor.
 ## Çalışma akışı
 
 Havuzun tamamı karıştırılıp baştan sona geliyor — vade ya da günlük sınır yok.
-Cevap yazılır, sonuç görünür, oka basılıp geçilir. Kategori rozetlerindeki
+Cevap yazılır, sonuç görünür, oka basılıp geçilir.
+
+Karıştırmadan sonra `spreadSiblings` aynı karakterin kartlarını birbirinden
+uzaklaştırıyor. Buranın iki tuzağı var, ikisi de rastgeleliği sessizce
+öldürüyordu: **uygun adaylar arasından rastgele seçilmeli** (ilk uyganı almak
+karıştırmayı boşa çıkarıp sırayı devre çeviriyordu) ve **aralık en az iki aday
+bırakmalı** (`size - 2`; daha genişi her adımda tek aday bıraktığı için oturum
+boyunca aynı dördül tekrarlanıyordu). Seçim, kaydın kalan kart sayısıyla
+ağırlıklı — kartlar eşit dağılmışken düpedüz eşit olasılık, dengesizken sona
+yığılmayı önlüyor. Kategori rozetlerindeki
 sayı da bu yüzden vadeyi değil, o kategoriyi seçersen gelecek kart sayısını
 gösteriyor.
 

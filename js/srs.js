@@ -139,20 +139,57 @@ export function buildQueue(cards) {
   return spreadSiblings(shuffled);
 }
 
-/** Aynı noteId'ye ait kartları birbirinden uzaklaştırır. */
+/**
+ * Aynı noteId'ye ait kartları birbirinden uzaklaştırır.
+ *
+ * Uygun adaylar arasından **rastgele** seçiyor. Önceden ilk uygun kartı
+ * alıyordu; bu, karıştırmayı bozup küçük havuzları katı bir devre çeviriyordu
+ * — üç karakterli bir destede sıra her seferinde A B C A B C olarak çıkıyordu.
+ *
+ * Kartı az kalmış kaydı sona bırakmamak için, eşit şartlarda elinde daha çok
+ * kart kalan kayıt öne alınıyor. Her kaydın kart sayısı aynı olduğunda (olağan
+ * durum) bu koşul hep berabere biter ve seçim saf rastgeleye iner; işe yalnız
+ * kartlar dengesizken karışıyor. Böylesi olmadan, sona kalan tek kaydın
+ * kartları arka arkaya yığılıyordu: her oturum aynı karakteri üç kez üst üste
+ * sorarak bitiyordu.
+ */
 function spreadSiblings(queue) {
   const out = [];
   const pending = [...queue];
   const GAP = 3;
 
+  const remaining = new Map();
+  for (const c of pending) remaining.set(c.noteId, (remaining.get(c.noteId) ?? 0) + 1);
+
+  // Aralık en az iki aday bırakmalı: `size - 1` seçilirse her adımda tek bir
+  // kayıt uygun kalıyor ve sıra kendini tekrar eden katı bir devre dönüşüyor —
+  // dört karakterli destede oturum boyunca aynı dördül geliyordu. `size - 2`
+  // ile her adımda hep bir seçenek fazlası var.
+  const gap = remaining.size <= 1 ? 0 : Math.max(1, Math.min(GAP, remaining.size - 2));
+
   while (pending.length) {
-    let picked = -1;
-    for (let i = 0; i < pending.length; i++) {
-      const recent = out.slice(-GAP);
-      if (!recent.some((c) => c.noteId === pending[i].noteId)) { picked = i; break; }
+    const recent = gap > 0 ? out.slice(-gap).map((c) => c.noteId) : [];
+
+    let pool = pending.map((_, i) => i).filter((i) => !recent.includes(pending[i].noteId));
+    if (!pool.length) pool = pending.map((_, i) => i);
+
+    // Kalan kart sayısına göre ağırlıklı rastgele seçim. Kartların hepsi eşit
+    // dağılmışken bu düpedüz eşit olasılık demek; biriken kayıt oldukça o
+    // kaydın çekilme şansı artıyor ve sona yığılmıyor. Ağırlığı görmezden
+    // gelip "en çok kalanı" seçmek ise sırayı yine katı bir devre çeviriyor.
+    let total = 0;
+    for (const i of pool) total += remaining.get(pending[i].noteId);
+    let tick = Math.random() * total;
+    let picked = pool[pool.length - 1];
+    for (const i of pool) {
+      tick -= remaining.get(pending[i].noteId);
+      if (tick <= 0) { picked = i; break; }
     }
-    if (picked < 0) picked = 0; // başka seçenek yok
-    out.push(pending.splice(picked, 1)[0]);
+
+    const card = pending.splice(picked, 1)[0];
+    remaining.set(card.noteId, remaining.get(card.noteId) - 1);
+    if (!remaining.get(card.noteId)) remaining.delete(card.noteId);
+    out.push(card);
   }
   return out;
 }

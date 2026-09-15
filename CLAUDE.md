@@ -210,6 +210,13 @@ rengi bu sessiz kırılmayı görünür kılmak için var.
 **Gömülü tarayıcıda servis çalışanı kaydolmaz.** Konsoldaki "unknown error
 when fetching the script" bundan; gerçek tarayıcıda sorun değil.
 
+**Eski servis çalışanı hâlâ devrede olabilir.** Kabuk artık önce ağdan alınsa
+da, sayfayı yöneten kayıt eski sürümse o eski kuralla (önbellek önce) çalışmaya
+devam ediyor. Geliştirirken "yazdığım kod çalışmıyor" hissi buradan gelir:
+`navigator.serviceWorker.getRegistrations()` ile kaydı sil, `caches.keys()` ile
+önbellekleri boşalt, yenile. Sunucunun ne verdiğini tarayıcı dışından (curl,
+Invoke-WebRequest) doğrulamak en hızlı ayrım.
+
 **Servis çalışanı kabuğu artık önce ağdan alıyor.** Önce önbellekten sunarken
 kod değişikliği hep bir açılış gecikmeli geliyordu; geliştirirken eski `app.js`
 sunulduğu için yok olmayan hatalar kovalanıyordu. Çevrimdışılık önbellek
@@ -229,6 +236,15 @@ paketini `import` etmek paketleyici gerektirirdi, projenin derleme adımı yok.
 birkaç bölümde geçebiliyor ve her bölümün destesinde kendi kaydı olabilmeli.
 Bu yüzden yinelenen denetimi (`findByHanzi`) desteye bakıyor, havuzun tamamına
 değil. Bedeli: her kopyanın kendi zamanlaması var.
+
+Kopyalar iki yerde tekleniyor. **"Tüm desteler" çalışılırken** kuyruğa her
+karakterden yalnız biri giriyor (`tekleştir`) — tek deste çalışırken kopya
+doğru, hepsini birden çalışırken 猫'yu üç kez sormanın anlamı yok. Kazanan en
+eski kayıt, `planDedupe` ile aynı kural. Eleme süzgeçten **sonra**: kopyalardan
+biri öğrenildi işaretliyse zaten elenmiş olur, geriye çalışılabilir olan kalır.
+Sayımlar da (`renderModes`) aynı elemeyi uyguluyor, yoksa rozet düğmeyle
+çelişiyor. **Kayıt taşınırken** hedef destede aynı karakter varsa `dedupeAll`
+ikisini birleştirip kullanıcıya söylüyor.
 
 İçe aktarma `id` üzerinden birleştiriyordu; aynı karakteri iki cihazda elle
 eklemek mükerrer kayıt üretiyordu. `planDedupe` bunu tekliyor: kazanan en eski

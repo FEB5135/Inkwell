@@ -140,7 +140,9 @@ function scopedCards() {
   const deckId = state.settings.studyDeck;
   const mode = state.settings.mode ?? 'all';
   const enabled = new Set(state.settings.types);
-  return state.cards.filter((c) => {
+  const hepsi = !deckId || deckId === 'all';
+
+  const kartlar = state.cards.filter((c) => {
     if (!enabled.has(c.type)) return false;
     const note = state.notes.get(c.noteId);
     if (!note) return false;
@@ -148,9 +150,38 @@ function scopedCards() {
     // seçiliyse de yalnız onlar kalır.
     if (isLearned(note) !== (mode === LEARNED)) return false;
     if (mode !== 'all' && mode !== LEARNED && c.type !== mode) return false;
-    if (!deckId || deckId === 'all') return true;
-    return note.deckId === deckId;
+    return hepsi || note.deckId === deckId;
   });
+
+  return hepsi ? tekleştir(kartlar) : kartlar;
+}
+
+/**
+ * "Tüm desteler"de aynı karakterin kopyalarından yalnız biri gelir.
+ *
+ * Aynı karakter birkaç bölümün destesinde durabiliyor; tek deste çalışırken bu
+ * doğru, ama hepsini birden çalışırken 猫'yu üç kez sormanın anlamı yok.
+ * Kazanan en eski kayıt (eşitlikte küçük `id`) — `planDedupe` ile aynı kural,
+ * böylece hangi kopyanın "asıl" sayıldığı her yerde tutarlı.
+ *
+ * Eleme süzgeçten **sonra** yapılıyor: kopyalardan biri öğrenildi işaretliyse o
+ * zaten elenmiş oluyor ve geriye çalışılabilir olan kalıyor.
+ */
+function tekleştir(kartlar) {
+  const asil = new Map();
+  for (const c of kartlar) {
+    const note = state.notes.get(c.noteId);
+    const key = String(note.hanzi ?? '').trim();
+    if (!key) continue;
+    const cur = asil.get(key);
+    if (!cur ||
+        (note.createdAt ?? 0) < (cur.createdAt ?? 0) ||
+        ((note.createdAt ?? 0) === (cur.createdAt ?? 0) && note.id < cur.id)) {
+      asil.set(key, note);
+    }
+  }
+  const secili = new Set([...asil.values()].map((n) => n.id));
+  return kartlar.filter((c) => secili.has(c.noteId));
 }
 
 /** Kategori değeri; kart türü değil, kuyruğun hangi havuzdan geleceği. */
@@ -173,15 +204,20 @@ function renderModes() {
   const inDeck = (c) =>
     !deckId || deckId === 'all' || state.notes.get(c.noteId)?.deckId === deckId;
 
-  const countFor = (type) =>
-    state.cards.filter((c) => {
+  // Sayım scopedCards ile aynı kuralları izlemeli — "Tüm desteler"deki
+  // kopya elemesi dahil. Yoksa rozet 15 derken düğme 9 diyor.
+  const hepsi = !deckId || deckId === 'all';
+  const countFor = (type) => {
+    const kartlar = state.cards.filter((c) => {
       const note = state.notes.get(c.noteId);
       if (!note || !inDeck(c)) return false;
       if (!enabled.includes(c.type)) return false;
       if (isLearned(note) !== (type === LEARNED)) return false;
       if (type !== 'all' && type !== LEARNED && c.type !== type) return false;
       return true;
-    }).length;
+    });
+    return (hepsi ? tekleştir(kartlar) : kartlar).length;
+  };
 
   const options = [['all', t('mode.all')], ...enabled.map((type) => [type, typeLabel(type)])];
   // Kategori ancak işaretlenmiş kayıt varken görünür; boşken gereksiz duruyor.
@@ -1141,9 +1177,14 @@ async function movePicked() {
   const deckId = $('browse-move').value;
   if (!ids.length || !deckId) return;
   await db.moveNotes(ids, deckId);
+  // Hedef destede aynı karakter zaten varsa taşıma orada iki kopya bırakır —
+  // bu, kuralımıza göre kaza. Birleştirici aynı destedeki kopyaları tekliyor.
+  const birlesen = await db.dedupeAll();
   const deck = state.decks.find((d) => d.id === deckId);
   state.picked.clear();
-  toast(t('toast.moved', { n: ids.length, x: deck?.name ?? '' }));
+  toast(birlesen
+    ? `${t('toast.moved', { n: ids.length, x: deck?.name ?? '' })} · ${t('toast.deduped', { n: birlesen })}`
+    : t('toast.moved', { n: ids.length, x: deck?.name ?? '' }));
   await refresh();
 }
 

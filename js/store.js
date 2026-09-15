@@ -459,6 +459,19 @@ ${hanzi}`;
   return plan;
 }
 
+/**
+ * Havuzu tarayıp aynı destedeki mükerrer kayıtları tekler; birleştirilen kayıt
+ * sayısını döner. İçe aktarmadan sonra ve kayıt taşındıktan sonra çağrılıyor —
+ * ikisi de aynı destede iki kopya bırakabilen işlemler.
+ */
+export async function dedupeAll() {
+  const [notes, cards] = await Promise.all([
+    tx(['notes'], 'readonly', (s) => asArray(s)),
+    tx(['cards'], 'readonly', (s) => asArray(s)),
+  ]);
+  return applyDedupe(planDedupe(notes, cards));
+}
+
 /** planDedupe'un çıkardığı planı yazar; birleştirilen kayıt sayısını döner. */
 export async function applyDedupe(plan) {
   if (!plan.droppedNotes.length) return 0;
@@ -548,11 +561,7 @@ export async function importAll(data) {
 
   // Birleşme bittikten sonra: aynı karakterin iki cihazdan gelen kopyaları
   // ancak her ikisi de havuzdayken görülebilir.
-  const [allNotes, allCards] = await Promise.all([
-    tx(['notes'], 'readonly', (s) => asArray(s)),
-    tx(['cards'], 'readonly', (s) => asArray(s)),
-  ]);
-  stats.merged = await applyDedupe(planDedupe(allNotes, allCards));
+  stats.merged = await dedupeAll();
 
   return stats;
 }

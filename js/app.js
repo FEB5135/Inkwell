@@ -735,6 +735,10 @@ function bindAdd() {
   $('add-deck').addEventListener('change', (e) => {
     state.settings.lastDeck = e.target.value;
     db.setSetting('lastDeck', e.target.value);
+    // "Zaten var" işaretleri artık desteye bağlı; deste değişince ekrandaki
+    // liste ve önizleme bayatlıyor.
+    if (bulkParsed.length) previewBulk();
+    if ($('dict-q').value.trim()) runSearch();
   });
 
   $('btn-bulk-preview').addEventListener('click', previewBulk);
@@ -771,7 +775,7 @@ async function quickAdd() {
   const hit = exact[0] ?? dict.search(raw)[0];
   if (!hit) { toast(t('toast.noMatch')); return; }
 
-  const dup = await db.findByHanzi(hit.hanzi);
+  const dup = await db.findByHanzi(hit.hanzi, currentDeck());
   if (dup) { toast(t('toast.dupe', { x: hit.hanzi })); return; }
 
   await db.addNote(
@@ -807,7 +811,11 @@ async function runSearch() {
   }
   $('dict-status').textContent = t('add.results', { n: hits.length });
 
-  const existing = new Set([...state.notes.values()].map((n) => n.hanzi));
+  // "Zaten var" işareti de eklenecek desteye göre.
+  const hedef = currentDeck();
+  const existing = new Set(
+    [...state.notes.values()].filter((n) => n.deckId === hedef).map((n) => n.hanzi)
+  );
   list.innerHTML = hits
     .map(
       (h, i) => `
@@ -830,7 +838,7 @@ async function runSearch() {
 }
 
 async function addFromDict(hit, btn) {
-  const dup = await db.findByHanzi(hit.hanzi);
+  const dup = await db.findByHanzi(hit.hanzi, currentDeck());
   if (dup) { toast(t('toast.dupe', { x: hit.hanzi })); return; }
 
   await db.addNote(
@@ -967,7 +975,7 @@ async function previewBulk() {
         parsed.filled = true;
       }
     }
-    parsed.dupe = !!(await db.findByHanzi(parsed.hanzi));
+    parsed.dupe = !!(await db.findByHanzi(parsed.hanzi, currentDeck()));
     if (!parsed.hanzi) parsed.error ||= t('add.errNoHanzi');
     else if (!parsed.pinyin) parsed.error ||= t('add.errNoPinyin');
     out.push(parsed);
@@ -1016,7 +1024,7 @@ async function previewBulk() {
     sel.addEventListener('change', async () => {
       const row = bulkParsed[Number(sel.dataset.alt)];
       applyOption(row, Number(sel.value));
-      row.dupe = !!(await db.findByHanzi(row.hanzi));
+      row.dupe = !!(await db.findByHanzi(row.hanzi, currentDeck()));
       previewBulk();
     })
   );
@@ -1057,7 +1065,7 @@ async function addManual() {
   const pinyin = $('m-pinyin').value.trim();
   const meaning = $('m-meaning').value.trim();
   if (!hanzi || !meaning) { toast(t('toast.needFields')); return; }
-  if (await db.findByHanzi(hanzi)) { toast(t('toast.dupe', { x: hanzi })); return; }
+  if (await db.findByHanzi(hanzi, currentDeck())) { toast(t('toast.dupe', { x: hanzi })); return; }
 
   await db.addNote({ deckId: currentDeck(), hanzi, pinyin, meaning }, state.settings.types);
   $('m-hanzi').value = $('m-pinyin').value = $('m-meaning').value = '';

@@ -225,11 +225,19 @@ paylaşım penceresi açılıyor (`@capacitor/filesystem` + `@capacitor/share`).
 Eklentilere `Capacitor.registerPlugin` ile köprü üstünden ulaşılıyor — JS
 paketini `import` etmek paketleyici gerektirirdi, projenin derleme adımı yok.
 
+**Aynı karakter birden çok destede bulunabilir.** Ders kitabında bir karakter
+birkaç bölümde geçebiliyor ve her bölümün destesinde kendi kaydı olabilmeli.
+Bu yüzden yinelenen denetimi (`findByHanzi`) desteye bakıyor, havuzun tamamına
+değil. Bedeli: her kopyanın kendi zamanlaması var.
+
 İçe aktarma `id` üzerinden birleştiriyordu; aynı karakteri iki cihazda elle
 eklemek mükerrer kayıt üretiyordu. `planDedupe` bunu tekliyor: kazanan en eski
 kayıt (eşitlikte küçük `id`), kartlarda tür tür en çok çalışılmış olan kalır.
 Kural saf ve deterministik — iki cihaz aynı sonuca varmazsa yedekler gidip
-gelirken yakınsamaz.
+gelirken yakınsamaz. Anahtarı **deste + karakter**: farklı destelerdeki
+kopyalar kasıtlı olduğu için birleştirilmez, yalnız aynı destede iki kez
+beliren kayıt kaza sayılır. Bunun sınırı şu: iki cihazda *ayrı ayrı oluşturulan*
+destelerin id'leri farklı olduğu için, oralardaki aynı karakter birleşmez.
 
 Cihaza ait ayarlar (`lang`, `theme`, `lastDeck`, `studyDeck`, `mode`) yedekten
 gelmez; yedeğin işi kartları taşımak.

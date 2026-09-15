@@ -135,10 +135,17 @@ export async function notesInDeck(deckId) {
   return live(rows);
 }
 
-/** Aynı karakter havuzda var mı? Yinelenen kart eklemeyi önlemek için. */
-export async function findByHanzi(hanzi) {
+/**
+ * Aynı karakter bu destede var mı?
+ *
+ * Denetim desteye bakıyor, havuzun tamamına değil: aynı karakter ders
+ * kitabında birden çok bölümde geçebiliyor ve her bölümün destesinde kendi
+ * kaydı olabilmeli. `deckId` verilmezse havuzun tamamına bakar.
+ */
+export async function findByHanzi(hanzi, deckId = null) {
   const rows = await tx(['notes'], 'readonly', (s) => asArray(s.index('hanzi'), hanzi));
-  return live(rows)[0] ?? null;
+  const canli = live(rows);
+  return (deckId ? canli.filter((n) => n.deckId === deckId) : canli)[0] ?? null;
 }
 
 /**
@@ -396,10 +403,15 @@ export function planDedupe(notes, cards) {
   const liveNotes = (notes ?? []).filter((n) => !n.deleted);
   const liveCards = (cards ?? []).filter((c) => !c.deleted);
 
+  // Anahtar deste + karakter: aynı karakterin farklı destelerdeki kopyaları
+  // artık kasıtlı, birleştirilmemeli. Yalnız *aynı* destede iki kez belirmesi
+  // kaza sayılıyor — iki cihazda aynı desteye elle eklemek gibi.
   const byHanzi = new Map();
   for (const n of liveNotes) {
-    const key = String(n.hanzi ?? '').trim();
-    if (!key) continue;
+    const hanzi = String(n.hanzi ?? '').trim();
+    if (!hanzi) continue;
+    const key = `${n.deckId}
+${hanzi}`;
     if (!byHanzi.has(key)) byHanzi.set(key, []);
     byHanzi.get(key).push(n);
   }

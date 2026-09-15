@@ -4,7 +4,7 @@
 import * as db from './store.js';
 import * as dict from './dict.js';
 import { toMarks, toNumbers, answerMatches, matchesButTone, looksLikePinyin } from './pinyin.js';
-import { schedule, dueLabel, buildQueue, startOfToday, AGAIN, GOOD } from './srs.js';
+import { schedule, dueLabel, buildQueue, selectForSession, startOfToday, AGAIN, GOOD } from './srs.js';
 import { comparePinyin, compareMeaning, suggestGrade } from './grade.js';
 import { t, setLang, getLang, detect, applyDom, LANGUAGES } from './i18n.js';
 import * as strokes from './strokes.js';
@@ -64,6 +64,9 @@ async function init() {
 
   await refresh();
   registerServiceWorker();
+
+  // Eskiyen tekrar kayıtları yedeği şişiriyordu; açılışta bir kez budanıyor.
+  db.pruneReviews().catch(() => {});
 }
 
 async function refresh() {
@@ -101,7 +104,14 @@ function go(screen) {
 /* ═══════════════════ çalışma ═══════════════════ */
 
 function bindStudy() {
-  $('btn-start').addEventListener('click', startSession);
+  $('btn-start').addEventListener('click', () => startSession(false));
+  $('btn-study-all').addEventListener('click', async () => {
+    const n = scopedCards().length;
+    const yes = await askConfirm(t('confirm.studyAll', { n }), t('confirm.studyAllText'), {
+      ok: t('study.studyAllOk'),
+    });
+    if (yes) startSession(true);
+  });
   $('btn-quit').addEventListener('click', () => endSession(true));
   $('btn-reveal').addEventListener('click', revealOrCheck);
   $('btn-done-back').addEventListener('click', () => {
@@ -167,8 +177,12 @@ function renderModes() {
   const inDeck = (c) =>
     !deckId || deckId === 'all' || state.notes.get(c.noteId)?.deckId === deckId;
 
-  const countFor = (type) =>
-    state.cards.filter((c) => {
+  // Rozet, o kategoriyi seçersen gelecek kart sayısını gösteriyor — oturum
+  // sınırı da buna dahil. Havuzu gösterip düğmede başka sayı yazmak, daha önce
+  // düzeltilen "rozetler rastgele duruyor" sorununun aynısını geri getirirdi.
+  const limit = sessionLimit();
+  const countFor = (type) => {
+    const havuz = state.cards.filter((c) => {
       const note = state.notes.get(c.noteId);
       if (!note || !inDeck(c)) return false;
       if (!enabled.includes(c.type)) return false;
@@ -176,6 +190,8 @@ function renderModes() {
       if (type !== 'all' && type !== LEARNED && c.type !== type) return false;
       return true;
     }).length;
+    return limit ? Math.min(havuz, limit) : havuz;
+  };
 
   const options = [['all', t('mode.all')], ...enabled.map((type) => [type, typeLabel(type)])];
   // Kategori ancak işaretlenmiş kayıt varken görünür; boşken gereksiz duruyor.
@@ -213,10 +229,22 @@ async function renderStudyHome() {
   $('count-today').textContent = reviewsToday;
   $('count-mature').textContent = mature;
 
+  // Düğmedeki sayı gerçekten gelecek kart sayısı olmalı; havuzun tamamı
+  // değil. Aradaki fark varsa altta açıkça söyleniyor.
+  const limit = sessionLimit();
+  const gelecek = limit && limit < cards.length ? limit : cards.length;
+
   $('btn-start').disabled = cards.length === 0;
   $('btn-start').textContent = cards.length
-    ? t('study.startN', { n: cards.length })
+    ? t('study.startN', { n: gelecek })
     : t('study.noCards');
+
+  const kirpildi = gelecek < cards.length;
+  $('session-note').hidden = !kirpildi;
+  if (kirpildi) {
+    $('session-note-text').textContent = t('study.limited', { n: cards.length, k: gelecek });
+    $('btn-study-all').textContent = t('study.studyAll');
+  }
   $('study-empty').hidden = cards.length > 0;
   $('study-empty').innerHTML = t('study.emptyNote', {
     link: `<button class="linkish" data-goto="add">${t('study.emptyLink')}</button>`,
@@ -232,8 +260,12 @@ async function renderStudyHome() {
     : `<div>${t('study.empty')}</div>`;
 }
 
-async function startSession() {
-  const queue = buildQueue(scopedCards());
+/** Sıfır = sınırsız. */
+const sessionLimit = () => state.settings.sessionLimit ?? 0;
+
+async function startSession(all = false) {
+  const pool = scopedCards();
+  const queue = buildQueue(selectForSession(pool, all ? 0 : sessionLimit()));
   if (!queue.length) return;
 
   state.session = { queue, total: queue.length, done: 0, correct: 0 };
@@ -1228,6 +1260,19 @@ function bindSettings() {
     renderStudyHome();
   });
 
+  const limitSel = $('opt-limit');
+  limitSel.innerHTML = [10, 20, 40, 60, 100, 0]
+    .map((v) => `<option value="${v}">${v ? v : escapeHtml(t('set.sessionAll'))}</option>`)
+    .join('');
+  limitSel.value = String(s.sessionLimit ?? 40);
+  limitSel.addEventListener('change', async (e) => {
+    state.settings.sessionLimit = Number(e.target.value);
+    await db.setSetting('sessionLimit', state.settings.sessionLimit);
+    // Rozetler de sınırı gösteriyor; onlar tazelenmezse düğmeyle çelişiyor.
+    renderModes();
+    renderStudyHome();
+  });
+
   applyTheme(s.theme ?? 'system');
   els('[data-theme-pick]').forEach((b) =>
     b.addEventListener('click', async () => {
@@ -1516,19 +1561,37 @@ function openDialog({ title, text = '', value = null, ok, cancel, danger = false
   okBtn.classList.toggle('btn--danger', danger);
   $('dialog-cancel').textContent = cancel ?? t('dialog.cancel');
 
+  const cancelBtn = $('dialog-cancel');
+
+  // Söz, kullanıcının **eylemiyle** çözülüyor; `close` olayı yalnız emniyet
+  // kemeri. Önce yalnız ona bağlıydı: bazı gömülü tarayıcılarda <dialog>
+  // kapanıp `returnValue` doğru ayarlandığı hâlde `close` hiç tetiklenmiyor,
+  // söz sonsuza kadar askıda kalıyor — arayüzde "düğmeye bastım, hiçbir şey
+  // olmadı" olarak görünüyor, hata da vermiyor.
   return new Promise((resolve) => {
-    const close = () => {
+    let settled = false;
+    const sonuc = () => (input.hidden ? true : input.value.trim() || null);
+
+    const finish = (val) => {
+      if (settled) return;
+      settled = true;
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancelClick);
+      dlg.removeEventListener('cancel', onEsc);
       dlg.removeEventListener('close', onClose);
-      $('dialog-cancel').removeEventListener('click', onCancel);
+      if (dlg.open) dlg.close();
+      resolve(val);
     };
-    const onCancel = () => dlg.close('');
-    const onClose = () => {
-      close();
-      if (dlg.returnValue !== 'ok') return resolve(null);
-      resolve(input.hidden ? true : input.value.trim() || null);
-    };
+
+    const onOk = () => finish(sonuc());
+    const onCancelClick = () => finish(null);
+    const onEsc = () => finish(null);
+    const onClose = () => finish(dlg.returnValue === 'ok' ? sonuc() : null);
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancelClick);
+    dlg.addEventListener('cancel', onEsc);
     dlg.addEventListener('close', onClose);
-    $('dialog-cancel').addEventListener('click', onCancel);
 
     dlg.returnValue = '';
     dlg.showModal();

@@ -309,6 +309,7 @@ const DEFAULTS = {
   // boşaltıyordu; ayrıldılar.
   lastDeck: null,
   studyDeck: 'all',
+  sessionLimit: 40,
 };
 
 export async function getSettings() {
@@ -332,6 +333,26 @@ export async function setSetting(key, value) {
 
 /* ───────────────────────── yedek ───────────────────────── */
 
+/**
+ * Tekrar geçmişi yalnız "bugün kaç kart" sayacı için okunuyor ama hiç
+ * budanmıyordu: her cevap sonsuza kadar duruyor. Ölçüldü — 500 karakter ve
+ * kart başına 50 tekrarda yedeğin 8,7 MB'ının 8,3 MB'ı tekrar kayıtlarıydı.
+ * Bu pencere dışındakiler hem yedekten hem veritabanından düşüyor.
+ */
+export const REVIEW_KEEP_DAYS = 90;
+
+/** Pencere dışındaki tekrar kayıtlarını siler; silinen sayısını döner. */
+export async function pruneReviews(days = REVIEW_KEEP_DAYS, now = Date.now()) {
+  const kes = now - days * 86400000;
+  const rows = await tx(['reviews'], 'readonly', (s) => asArray(s));
+  const eski = rows.filter((r) => (r.ts ?? 0) < kes);
+  if (!eski.length) return 0;
+  await tx(['reviews'], 'readwrite', (s) => {
+    for (const r of eski) s.delete(r.id);
+  });
+  return eski.length;
+}
+
 export async function exportAll() {
   const [decks, notes, cards, reviews, meta] = await Promise.all([
     tx(['decks'], 'readonly', (s) => asArray(s)),
@@ -340,11 +361,15 @@ export async function exportAll() {
     tx(['reviews'], 'readonly', (s) => asArray(s)),
     tx(['meta'], 'readonly', (s) => asArray(s)),
   ]);
+  const kes = Date.now() - REVIEW_KEEP_DAYS * 86400000;
   return {
     app: 'inkwell',
     version: 1,
     exportedAt: new Date().toISOString(),
-    decks, notes, cards, reviews, meta,
+    decks, notes, cards, meta,
+    // Kartların zamanlaması kendi içinde duruyor; geçmiş yalnız günlük sayaç
+    // için, o yüzden yedeğe son pencere giriyor.
+    reviews: reviews.filter((r) => (r.ts ?? 0) >= kes),
   };
 }
 

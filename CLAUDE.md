@@ -111,6 +111,22 @@ ama kartları ve zamanlaması durur; kendi kategorisinden istendiği zaman
 Ekleme hedefi (`lastDeck`) ile çalışılan deste (`studyDeck`) ayrı ayarlar.
 Tek ayardılar; yeni deste açmak çalışma kuyruğunu sessizce boşaltıyordu.
 
+**Oturum sınırlı.** Havuzun tamamı bir oturuma sığmıyor: 500 karakter üç kart
+türüyle 1500 kart eder. `sessionLimit` (varsayılan 40, Ayarlar → Oturum) her
+kategori için geçerli — rozetler de bu sayıyı gösteriyor, yoksa düğmeyle
+çelişiyorlar. Havuz sınırı aşınca altta kaç kart geleceği yazıyor ve "Hepsini
+çalış" bağlantısı uyarıdan sonra sınırsız oturum açıyor.
+
+Hangi kartların geleceğini `selectForSession` seçiyor, zaten biriken zamanlama
+verisinden: payın üçte biri yeni kartlara ayrılıyor (yoksa biriken tekrar
+yığını yüzünden yeni eklenen bölüm günlerce sıraya giremezdi), kalanı vadesi
+gelenlere en uzun bekleyenden başlayarak, yer kalırsa vadesi gelmemişlere.
+
+**Tekrar geçmişi 90 günde budanıyor** (`REVIEW_KEEP_DAYS`). Geçmiş yalnız
+"bugün kaç kart" sayacı için okunuyor ama hiç silinmiyordu: 500 karakter ve
+kart başına 50 tekrarda yedeğin 8,7 MB'ının 8,3 MB'ı tekrar kayıtlarıydı.
+Budama hem açılışta veritabanında hem de yedek üretilirken uygulanıyor.
+
 **Not kullanıcıdan sorulmuyor.** Cevap zaten ölçüldüğü için yakınlıktan
 türetiliyor: tam → İyi, ton yanlış / bir harf sapma → Zor, diğer → Tekrar.
 Zamanlama verisi arka planda birikiyor ama kuyruğa karışmıyor. (Kullanıcı not
@@ -176,6 +192,13 @@ gönderilmeli, `mouseup` belgeye. Koordinat hesaplarken kendi varsayımını
 kurma: kütüphane SVG'nin içine kendi `translate(...) scale(...)` grubunu
 koyuyor, karakter koordinatını ekrana çevirmek için o grubun
 `getScreenCTM()` matrisi kullanılmalı.
+
+**`<dialog>`'un `close` olayına tek başına güvenme.** Bazı gömülü
+tarayıcılarda diyalog kapanıp `returnValue` doğru ayarlandığı hâlde `close`
+hiç tetiklenmiyor. Söz yalnız o olaya bağlıyken bütün diyaloglar sessizce
+askıda kalıyordu — kullanıcı düğmeye basıyor, hiçbir şey olmuyor, hata da yok.
+`openDialog` artık düğme tıklamalarıyla çözülüyor, `close` yalnız emniyet
+kemeri.
 
 **hanzi-writer geçersiz renkte çöker.** Renkleri CSS belirteçlerinden okuyoruz
 (`cssVar`); olmayan bir belirteç boş dize döndürür, kütüphane de

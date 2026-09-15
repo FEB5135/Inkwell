@@ -295,6 +295,14 @@ body {
 .icon-btn:hover { background: var(--paper-sunk); color: var(--ink); }
 
 .empty-note { color: var(--ink-3); font-size: .9rem; text-align: center; margin: 20px 0; }
+.session-note {
+  margin: 8px 0 0;
+  font-size: .82rem;
+  line-height: 1.5;
+  color: var(--ink-3);
+  text-align: center;
+}
+.session-note .linkish { margin-left: 4px; font-size: inherit; }
 
 /* ─── çalışma kategorileri ─── */
 /* Kategoriler yan kaydırmalı bir şeritti: fareyle kaydırılamadığı için sondaki

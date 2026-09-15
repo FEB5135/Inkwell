@@ -130,6 +130,40 @@ export function dueLabel(card, now = Date.now()) {
  * Aynı kaydın farklı türdeki kartları arka arkaya gelmez: birini görmek
  * diğerinin cevabını verir, o yüzden araları açılır.
  */
+/**
+ * Oturuma girecek kartları seçer.
+ *
+ * Havuz büyüdükçe "hepsini çalış" anlamını yitiriyor: 500 karakter üç kart
+ * türüyle 1500 kart eder, tek oturumda bitmez. Sınır bu yüzden var.
+ *
+ * Seçim körlemesine değil, zaten biriken zamanlama verisine dayanıyor:
+ *   1. Yeni kartlara payın üçte biri ayrılıyor. Yoksa, biriken tekrar yığını
+ *      hep önde olduğu için yeni eklenen bölüm günlerce sıraya giremezdi.
+ *   2. Kalan yer vadesi gelenlere, en uzun bekleyenden başlayarak.
+ *   3. Hâlâ yer varsa vadesi gelmemişler, en yakın vadeliden başlayarak.
+ *
+ * `limit` sıfır ya da havuzdan büyükse her şey gelir.
+ */
+export function selectForSession(cards, limit, now = Date.now()) {
+  if (!limit || limit >= cards.length) return [...cards];
+
+  const isNew = (c) => c.state === 'new';
+  const byDue = (a, b) => a.due - b.due;
+
+  const fresh = cards.filter(isNew).sort(byDue);
+  const due = cards.filter((c) => !isNew(c) && c.due <= now).sort(byDue);
+  const later = cards.filter((c) => !isNew(c) && c.due > now).sort(byDue);
+
+  const out = fresh.slice(0, Math.ceil(limit / 3));
+  for (const group of [due, fresh.slice(out.length), later]) {
+    for (const c of group) {
+      if (out.length >= limit) return out;
+      out.push(c);
+    }
+  }
+  return out;
+}
+
 export function buildQueue(cards) {
   const shuffled = [...cards];
   for (let i = shuffled.length - 1; i > 0; i--) {

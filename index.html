@@ -51,6 +51,13 @@
 
       <button class="btn btn--primary btn--xl" id="btn-start" data-i18n="study.start">Çalışmaya başla</button>
 
+      <!-- Havuz sınırı aşınca: kaçının geleceğini söyler, hepsini isteyene
+           de uyarıdan sonra yol verir. -->
+      <p class="session-note" id="session-note" hidden>
+        <span id="session-note-text"></span>
+        <button class="linkish" id="btn-study-all"></button>
+      </p>
+
       <p class="empty-note" id="study-empty" hidden></p>
 
       <div class="mini-stats" id="mini-stats"></div>
@@ -223,6 +230,13 @@
         <button class="segment" data-theme-pick="light" data-i18n="set.themeLight">Açık</button>
         <button class="segment" data-theme-pick="dark" data-i18n="set.themeDark">Koyu</button>
       </div>
+    </div>
+
+    <div class="setting-group">
+      <h2 class="group-title" data-i18n="set.session">Oturum</h2>
+      <p class="hint" data-i18n="set.sessionHint"></p>
+      <label class="field-label" for="opt-limit" data-i18n="set.sessionLimit">Oturum başına kart</label>
+      <select id="opt-limit" class="select"></select>
     </div>
 
     <div class="setting-group">

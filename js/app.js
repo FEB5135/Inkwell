@@ -1078,14 +1078,21 @@ const POOL_WARN_AT = 100;
 
 async function maybeWarnPool() {
   if (state.settings.poolWarned) return;
-  // Eşik kart değil **karakter** sayısında: eklediğin şey bir karakter, üç
-  // kart değil. Kartla sayınca 100 kart ≈ 34 karakter ediyordu ve uyarı,
-  // kullanıcının saydığı sayıyla hiç örtüşmüyordu.
-  if (state.notes.size < POOL_WARN_AT) return;
 
+  // Sayım **eklenen destenin** kayıtları üzerinde. Oturum zaten seçili desteyle
+  // sınırlı; toplamı saymak, kırk kayıtlık yeni bir bölüme eklerken bile uyarı
+  // çıkarıyordu. Birim de kart değil kayıt: eklediğin şey bir karakter ve
+  // anlamı, açık tür sayısı kadar kart değil.
+  const deckId = currentDeck();
+  const deck = state.decks.find((d) => d.id === deckId);
+  const n = [...state.notes.values()].filter((x) => x.deckId === deckId).length;
+  if (n < POOL_WARN_AT) return;
+
+  // Bayrak genel: mesaj uygulamanın nasıl çalıştığını anlatıyor, bir kez
+  // okunması yeter — her deste için tekrarlamasının anlamı yok.
   state.settings.poolWarned = true;
   await db.setSetting('poolWarned', true);
-  await askConfirm(t('pool.warnTitle', { n: state.notes.size }), t('pool.warnText'), {
+  await askConfirm(t('pool.warnTitle', { x: deck?.name ?? '', n }), t('pool.warnText'), {
     ok: t('dialog.gotIt'),
     cancel: false,
   });

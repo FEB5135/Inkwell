@@ -113,10 +113,15 @@ Tek ayardılar; yeni deste açmak çalışma kuyruğunu sessizce boşaltıyordu.
 
 **Oturum başına kart sınırı yok — denendi ve kaldırıldı.** Sınır, 59 kartla 60
 kart arasında keyfi bir davranış farkı yaratıyordu. Havuzun tamamı hâlâ tek
-oturumda geliyor; bunun bedeli yalnızca **bir kez** söyleniyor: kart sayısı
-`POOL_WARN_AT`'i (100) ilk geçtiğinde ekleme sonrası bir bilgi diyaloğu çıkıp
-havuzu daraltma yollarını hatırlatıyor (deste, kategori, "öğrenildi").
-`poolWarned` ayarı bunun tekrarını engelliyor.
+oturumda geliyor; bunun bedeli yalnızca **bir kez** söyleniyor: eklenen
+destenin kayıt sayısı `POOL_WARN_AT`'i (100) ilk geçtiğinde ekleme sonrası bir
+bilgi diyaloğu çıkıyor. `poolWarned` ayarı tekrarını engelliyor — mesaj
+uygulamanın nasıl çalıştığını anlatıyor, bir kez okunması yeter.
+
+Sayımın iki ayrıntısı deneyerek oturdu: birim **kayıt** (hanzi + anlamı), açık
+tür sayısı kadar kart değil — kullanıcı eklediği şeyi sayıyor, üç katını değil.
+Ve sayım **deste başına**; oturum zaten seçili desteyle sınırlı olduğu için
+toplamı saymak, kırk kayıtlık yeni bir bölüme eklerken bile uyarı çıkarıyordu.
 
 **Tekrar geçmişi 90 günde budanıyor** (`REVIEW_KEEP_DAYS`). Geçmiş yalnız
 "bugün kaç kart" sayacı için okunuyor ama hiç silinmiyordu: 500 karakter ve

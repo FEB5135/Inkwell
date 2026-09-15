@@ -17,16 +17,20 @@
   --rule:       #e3e3e3;
   --rule-2:     #cfcfcf;
 
-  --seal:       #b81d43;   /* karmen — maviye çalan kırmızı */
-  --seal-deep:  #8d1233;
-  --seal-soft:  #fbe6ec;
-  /* Düğme dolgusu ayrı: koyu temada vurgu rengi aydınlanıyor, beyaz yazıyı
-     taşıyacak kadar koyu bir kırmızı gerekiyor. */
-  --seal-fill-a: #b81d43;
-  --seal-fill-b: #8d1233;
+  /* Arayüzün vurgusu mavi. Kırmızı yalnız "yanlış" demek için ayrıldı:
+     çalışırken doğru yeşil, yanlış kırmızı yanıyor — düğmeler de kırmızı
+     olunca bu iki anlam birbirine karışıyordu. */
+  --accent:      #145cc4;
+  --accent-deep: #0e4497;
+  --accent-soft: #e3ecfb;
+  /* Düğme dolgusu ayrı: koyu temada vurgu aydınlanıyor, beyaz yazıyı
+     taşıyacak kadar koyu bir mavi gerekiyor. */
+  --accent-fill-a: #145cc4;
+  --accent-fill-b: #0e4497;
   --jade:       #1f7a63;   /* doğru */
-  --amber:      #7a4e9e;   /* zor — mavi ile kırmızı arası */
-  --slate:      #3f5fa6;   /* kolay — ikincil vurgu */
+  --amber:      #a35f00;   /* neredeyse / ton yanlış */
+  --wrong:      #c62828;   /* yanlış — ve geri alınamaz işlemler */
+  --wrong-soft: #fdeaea;
   --hairline:   #d4d4d4;   /* ince başlık çizgileri */
 
   --radius:     11px;
@@ -53,14 +57,15 @@
     --ink-3:      #7e7e7e;
     --rule:       #272727;
     --rule-2:     #3b3b3b;
-    --seal:       #ef7191;
-    --seal-deep:  #b52348;
-    --seal-soft:  #331a25;
-    --seal-fill-a: #b52348;
-    --seal-fill-b: #8a1436;
+    --accent:      #6ea8f5;
+    --accent-deep: #2f6fd0;
+    --accent-soft: #10243f;
+    --accent-fill-a: #1e5fbd;
+    --accent-fill-b: #17478f;
     --jade:       #4fb193;
-    --amber:      #b98ede;
-    --slate:      #7f9fe4;
+    --amber:      #e8a84a;
+    --wrong:      #f2726c;
+    --wrong-soft: #3a1a19;
     --hairline:   #3a3a3a;
     --shadow:     0 1px 2px rgba(0,0,0,.45), 0 6px 20px -8px rgba(0,0,0,.65);
     --shadow-lg:  0 2px 4px rgba(0,0,0,.5), 0 18px 40px -16px rgba(0,0,0,.75);
@@ -72,9 +77,10 @@
   --paper: #000000; --paper-2: #121212; --paper-sunk: #0a0a0a;
   --ink: #f2f2f2; --ink-2: #b0b0b0; --ink-3: #7e7e7e;
   --rule: #272727; --rule-2: #3b3b3b;
-  --seal: #ef7191; --seal-deep: #b52348; --seal-soft: #331a25;
-  --seal-fill-a: #b52348; --seal-fill-b: #8a1436;
-  --jade: #4fb193; --amber: #b98ede; --slate: #7f9fe4; --hairline: #3a3a3a;
+  --accent: #6ea8f5; --accent-deep: #2f6fd0; --accent-soft: #10243f;
+  --accent-fill-a: #1e5fbd; --accent-fill-b: #17478f;
+  --jade: #4fb193; --amber: #e8a84a; --wrong: #f2726c; --wrong-soft: #3a1a19;
+  --hairline: #3a3a3a;
   --shadow: 0 1px 2px rgba(0,0,0,.45), 0 6px 20px -8px rgba(0,0,0,.65);
   --shadow-lg: 0 2px 4px rgba(0,0,0,.5), 0 18px 40px -16px rgba(0,0,0,.75);
 }
@@ -164,9 +170,9 @@ body {
   background: currentColor;
   opacity: .85;
 }
-.queue-stat--new  { color: var(--slate); }
+.queue-stat--new  { color: var(--accent); }
 .queue-stat--learn { color: var(--amber); }
-.queue-stat--due  { color: var(--seal); }
+.queue-stat--due  { color: var(--jade); }
 .queue-num { display: block; font-size: 1.6rem; font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .queue-label { font-size: .78rem; color: var(--ink-3); letter-spacing: .03em; }
 .queue-num { color: currentColor; }
@@ -202,8 +208,8 @@ body {
 }
 .input:focus, .select:focus, .textarea:focus {
   outline: none;
-  border-color: var(--seal);
-  box-shadow: 0 0 0 3px var(--seal-soft);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .input--lg { padding: 14px 16px; font-size: 1.05rem; }
 .input--num { max-width: 130px; }
@@ -239,7 +245,7 @@ body {
   cursor: pointer;
 }
 .check:last-of-type { border-bottom: 0; }
-.check input { margin-top: 4px; accent-color: var(--seal); width: 17px; height: 17px; flex: none; }
+.check input { margin-top: 4px; accent-color: var(--accent); width: 17px; height: 17px; flex: none; }
 .check span { display: grid; }
 .check b { font-weight: 600; font-size: .95rem; }
 .check i { font-style: normal; color: var(--ink-3); font-size: .85rem; font-family: var(--han); }
@@ -260,18 +266,18 @@ body {
 }
 .btn:active { transform: translateY(1px); }
 .btn--primary {
-  background: linear-gradient(180deg, var(--seal-fill-a), var(--seal-fill-b));
+  background: linear-gradient(180deg, var(--accent-fill-a), var(--accent-fill-b));
   color: #fff;
   box-shadow: var(--shadow);
 }
 .btn--primary:hover { filter: brightness(1.08); }
 .btn--danger {
   background: none;
-  color: var(--seal);
-  border-color: var(--seal);
+  color: var(--wrong);
+  border-color: var(--wrong);
   box-shadow: none;
 }
-.btn--danger:hover { background: var(--seal-soft); filter: none; }
+.btn--danger:hover { background: var(--wrong-soft); filter: none; }
 .btn--primary:disabled { background: var(--rule-2); color: var(--ink-3); box-shadow: none; cursor: default; }
 .btn--ghost { background: var(--paper-2); color: var(--ink); border-color: var(--rule-2); }
 .btn--ghost:hover { background: var(--paper-sunk); }
@@ -279,7 +285,7 @@ body {
 .btn--xl { width: 100%; padding: 13px; font-size: 1.05rem; border-radius: var(--radius); }
 .linkish {
   background: none; border: 0; padding: 0; font: inherit;
-  color: var(--seal); text-decoration: underline; cursor: pointer;
+  color: var(--accent); text-decoration: underline; cursor: pointer;
 }
 .icon-btn {
   background: none; border: 0; color: var(--ink-3);
@@ -327,8 +333,8 @@ body {
   font-variant-numeric: tabular-nums;
 }
 .mode.is-active {
-  background: var(--seal-fill-a);
-  border-color: var(--seal-fill-a);
+  background: var(--accent-fill-a);
+  border-color: var(--accent-fill-a);
   color: #fff;
 }
 .mode.is-active em { background: rgba(255,255,255,.22); color: #fff; }
@@ -353,7 +359,7 @@ body {
 .progress-fill {
   height: 100%;
   width: 0;
-  background: var(--seal);
+  background: var(--accent);
   border-radius: 99px;
   transition: width .3s cubic-bezier(.4,0,.2,1);
 }
@@ -409,7 +415,7 @@ body {
 .prompt-pinyin {
   font-size: clamp(2.2rem, 9vw, 3.2rem);
   font-weight: 600;
-  color: var(--seal);
+  color: var(--accent);
   letter-spacing: .02em;
   margin: 0;
 }
@@ -426,7 +432,7 @@ body {
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .back-pinyin {
   font-size: 1.5rem;
-  color: var(--seal);
+  color: var(--accent);
   font-weight: 600;
   letter-spacing: .02em;
   margin: 0 0 6px;
@@ -446,12 +452,12 @@ body {
   padding: 12px;
   letter-spacing: .04em;
 }
-.answer-input:focus { outline: none; border-color: var(--seal); box-shadow: 0 0 0 3px var(--seal-soft); }
+.answer-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .answer-hint { font-size: .78rem; color: var(--ink-3); margin: 8px 0 0; }
 .answer-hint code { font-family: var(--mono); }
 .answer-verdict { margin: 16px 0 0; font-weight: 600; font-size: 1.05rem; text-align: center; }
 .answer-verdict.is-ok { color: var(--jade); }
-.answer-verdict.is-bad { color: var(--seal); }
+.answer-verdict.is-bad { color: var(--wrong); }
 .answer-verdict.is-close { color: var(--amber); }
 
 .verdict-detail { margin-top: 8px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
@@ -461,7 +467,7 @@ body {
   color: var(--ink-2);
   font-weight: 500;
 }
-.syl--miss { color: var(--seal); }
+.syl--miss { color: var(--wrong); }
 .syl--miss i {
   font-style: normal;
   font-family: var(--mono);
@@ -487,7 +493,7 @@ body {
   width: 74px; height: 74px;
   line-height: 74px;
   margin: 0 auto 18px;
-  background: var(--seal);
+  background: var(--accent);
   color: #fff;
   font-size: 2.4rem;
   border-radius: 12px;
@@ -538,7 +544,7 @@ body {
   opacity: .55;
 }
 .write-cell svg { position: relative; z-index: 1; }
-.write-cell.is-active { border-color: var(--seal); }
+.write-cell.is-active { border-color: var(--accent); }
 
 .write-status {
   text-align: center;
@@ -599,14 +605,14 @@ body {
 .result.is-dupe { opacity: .55; }
 .result-hanzi { font-family: var(--han); font-size: 1.9rem; line-height: 1.1; flex: none; min-width: 2.2em; }
 .result-body { min-width: 0; flex: 1; }
-.result-pinyin { color: var(--seal); font-weight: 600; font-size: .95rem; }
+.result-pinyin { color: var(--accent); font-weight: 600; font-size: .95rem; }
 .result-meaning {
   color: var(--ink-2); font-size: .87rem;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .result-flag { flex: none; font-size: .72rem; color: var(--ink-3); }
-.result-plus { flex: none; color: var(--seal); font-size: 1.3rem; font-weight: 300; }
+.result-plus { flex: none; color: var(--accent); font-size: 1.3rem; font-weight: 300; }
 
 .alt-pick {
   margin-top: 6px;
@@ -620,7 +626,7 @@ body {
   border-radius: 7px;
   padding: 5px 8px;
 }
-.alt-pick:focus { outline: none; border-color: var(--seal); }
+.alt-pick:focus { outline: none; border-color: var(--accent); }
 
 /* ═══════════ HAVUZ ═══════════ */
 /* minmax(0,1fr): ızgara gözü varsayılan olarak içeriğinden küçülmez, uzun
@@ -643,10 +649,10 @@ body {
   padding: 8px 10px;
 }
 .is-selectable .note { cursor: pointer; }
-.note.is-picked { border-color: var(--seal); background: var(--paper-sunk); }
+.note.is-picked { border-color: var(--accent); background: var(--paper-sunk); }
 .note-hanzi { font-family: var(--han); font-size: 1.8rem; flex: none; min-width: 2.2em; }
 .note-body { flex: 1; min-width: 0; }
-.note-pinyin { color: var(--seal); font-weight: 600; font-size: .92rem; }
+.note-pinyin { color: var(--accent); font-weight: 600; font-size: .92rem; }
 /* Sözlükten gelen anlamlar uzun olabiliyor; satırı taşırmasın diye kırpılır.
    Kırpma yalnız blok kutuda çalışır, satır içi span'de değil. */
 .note-meaning {
@@ -683,7 +689,7 @@ body {
   margin-top: 12px;
   padding: 9px 11px;
   background: var(--paper-2);
-  border: 1px solid var(--seal);
+  border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
 }
 .bulk-bar > .select { flex: 1; min-width: 7em; }
@@ -738,12 +744,12 @@ body {
   letter-spacing: .02em;
 }
 .tabbar-btn svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.tabbar-btn.is-active { color: var(--seal); }
+.tabbar-btn.is-active { color: var(--accent); }
 .badge {
   position: absolute;
   top: 4px; left: 50%;
   transform: translateX(4px);
-  background: var(--seal);
+  background: var(--accent);
   color: #fff;
   font-style: normal;
   font-size: .62rem;

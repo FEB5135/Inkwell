@@ -35,7 +35,7 @@ duruyorlar. `index.html`'deki tek `<dialog>` üstünden `askText()` ve
 
 ```
 index.html            arayüz iskeleti (data-i18n işaretli)
-css/app.css           tema — nötr zemin + karmen vurgu, açık/koyu
+css/app.css           tema — nötr zemin + mavi vurgu, açık/koyu
 js/app.js             ekranlar, oturum akışı
 js/i18n.js            tr/en sözlüğü
 js/store.js           IndexedDB, yedekleme
@@ -125,13 +125,17 @@ xi+an mı belirsiz, en az parçalı bölünme seçilir.
 **Sözlük anahtarları hece ayırmadan geçmez.** CC-CEDICT okunuşları zaten
 ayrılmış; 125 bin kaydı çözümlemek açılışı boşuna yavaşlatır.
 
-**Zemin tonsuz, renk yalnız vurgularda.** Gri tonlarında kalan en ufak
-sıcaklık geniş yüzeyde kahverengiye çalıyor; zemin bu yüzden düz beyaz
+**Zemin tonsuz, renk yalnız anlam taşıdığı yerde.** Gri tonlarında kalan en
+ufak sıcaklık geniş yüzeyde kahverengiye çalıyor; zemin bu yüzden düz beyaz
 (`#ffffff`) ve düz siyah (`#000000`), aradaki griler de nötr. Arka planda
-ışıma yok. Vurgu, maviye çalan bir kırmızı: karmen (`#b81d43`) — sıcak
-zencifre kırmızısı (朱砂) soluk ve tozlu duruyordu. İkincil vurgu mavi,
-"zor" rengi de sarıdan mora alındı; hardal bu ailede yamalı duruyordu.
-Üç sayaç şeridi böylece mavi → mor → karmen olarak tek aile okunuyor.
+ışıma yok.
+
+**Arayüzün vurgusu mavi (`--accent`), kırmızı yalnız "yanlış" demek için
+ayrıldı (`--wrong`).** Çalışırken doğru yeşil, yanlış kırmızı yanıyor; düğmeler
+ve etkin sekmeler de kırmızıyken bu iki anlam birbirine karışıyordu. Aynı
+sebeple üç sayaç ayrı ayrı okunuyor: havuz mavi, bugün kehribar, yerleşmiş
+yeşil. `--wrong` ayrıca geri alınamaz işlemlerde (silme düğmesi) kullanılıyor —
+orada da anlamı "dikkat".
 
 Açık temada zemin ile kart aynı beyaz olduğu için **kartları ayıran tek şey
 kenarlık**: `--rule` tonuna dokunurken bunu hesaba kat.

@@ -1,39 +1,42 @@
 /* ═══════════════════════════════════════════════
    Inkwell — kağıt & mürekkep
-   Açık tema: eskimiş kağıt, siyah mürekkep, zincifre kırmızısı mühür.
-   Koyu tema: aynı palet tersine çevrilmiş, sıcaklık korunarak.
+   Vurgu, maviye çalan bir kırmızı: karmen. Sıcak zencifre kırmızısı sarı
+   kağıtla birleşince soluk ve tozlu duruyordu; serin bir zemin üstünde soğuk
+   kırmızı hem daha canlı hem daha keskin. İkincil vurgu mavi — aynı ailenin
+   iki ucu, "kolay" ve arka plandaki ışıma ondan geliyor.
+   Koyu tema: aynı palet tersine çevrilmiş, serinlik korunarak.
    ═══════════════════════════════════════════════ */
 
 :root {
   color-scheme: light;
 
-  --paper:      #f6f1e7;   /* xuan kağıdı — hafif sarıya çalar */
-  --paper-2:    #fffdf8;
-  --paper-sunk: #ece4d5;
-  --ink:        #17150f;
-  --ink-2:      #4e4840;
-  --ink-3:      #8a8175;
-  --rule:       #e0d7c5;
-  --rule-2:     #cdc2ad;
+  --paper:      #f5f3f7;   /* kağıt, serin tarafa çalar */
+  --paper-2:    #ffffff;
+  --paper-sunk: #eae6f0;
+  --ink:        #15131c;
+  --ink-2:      #474355;
+  --ink-3:      #7c778c;
+  --rule:       #e2dded;
+  --rule-2:     #cac3da;
 
-  --seal:       #ab2f22;   /* 朱砂 — mühür mürekkebi */
-  --seal-deep:  #8c2018;
-  --seal-soft:  #f6e4df;
+  --seal:       #b81d43;   /* karmen — maviye çalan kırmızı */
+  --seal-deep:  #8d1233;
+  --seal-soft:  #fbe6ec;
   /* Düğme dolgusu ayrı: koyu temada vurgu rengi aydınlanıyor, beyaz yazıyı
      taşıyacak kadar koyu bir kırmızı gerekiyor. */
-  --seal-fill-a: #ab2f22;
-  --seal-fill-b: #8c2018;
-  --jade:       #2f7358;   /* doğru */
-  --amber:      #a9701a;   /* zor */
-  --slate:      #3d6382;   /* kolay */
-  --gold:       #c8a45c;   /* ince vurgu çizgileri */
-  --wash-1:     rgba(171,47,34,.07);
-  --wash-2:     rgba(200,164,92,.10);
+  --seal-fill-a: #b81d43;
+  --seal-fill-b: #8d1233;
+  --jade:       #1f7a63;   /* doğru */
+  --amber:      #7a4e9e;   /* zor — mavi ile kırmızı arası */
+  --slate:      #3f5fa6;   /* kolay — ikincil vurgu */
+  --hairline:   #a9a0cc;   /* ince başlık çizgileri */
+  --wash-1:     rgba(184,29,67,.09);
+  --wash-2:     rgba(63,95,166,.09);
 
   --radius:     14px;
   --radius-sm:  9px;
-  --shadow:     0 1px 2px rgba(28,26,23,.05), 0 6px 20px -8px rgba(28,26,23,.14);
-  --shadow-lg:  0 2px 4px rgba(28,26,23,.06), 0 18px 40px -16px rgba(28,26,23,.22);
+  --shadow:     0 1px 2px rgba(21,19,28,.06), 0 6px 20px -8px rgba(21,19,28,.16);
+  --shadow-lg:  0 2px 4px rgba(21,19,28,.07), 0 18px 40px -16px rgba(21,19,28,.24);
 
   --ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   --han: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", "Noto Serif CJK SC",
@@ -46,25 +49,25 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --paper:      #17150f;
-    --paper-2:    #211d16;
-    --paper-sunk: #100e09;
-    --ink:        #f3eee2;
-    --ink-2:      #bab2a3;
-    --ink-3:      #857c6d;
-    --rule:       #332e24;
-    --rule-2:     #463f31;
-    --seal:       #e2705c;
-    --seal-deep:  #b94636;
-    --seal-soft:  #34201b;
-    --seal-fill-a: #b94636;
-    --seal-fill-b: #93301f;
-    --jade:       #63ad88;
-    --amber:      #dca648;
-    --slate:      #7ba7cc;
-    --gold:       #a98a48;
-    --wash-1:     rgba(226,112,92,.10);
-    --wash-2:     rgba(169,138,72,.07);
+    --paper:      #141219;
+    --paper-2:    #1d1a25;
+    --paper-sunk: #0f0e14;
+    --ink:        #f0edf6;
+    --ink-2:      #b5b0c4;
+    --ink-3:      #807b90;
+    --rule:       #2a2634;
+    --rule-2:     #3a3549;
+    --seal:       #ef7191;
+    --seal-deep:  #b52348;
+    --seal-soft:  #331a25;
+    --seal-fill-a: #b52348;
+    --seal-fill-b: #8a1436;
+    --jade:       #4fb193;
+    --amber:      #b98ede;
+    --slate:      #7f9fe4;
+    --hairline:   #6f6790;
+    --wash-1:     rgba(239,113,145,.10);
+    --wash-2:     rgba(127,159,228,.08);
     --shadow:     0 1px 2px rgba(0,0,0,.45), 0 6px 20px -8px rgba(0,0,0,.65);
     --shadow-lg:  0 2px 4px rgba(0,0,0,.5), 0 18px 40px -16px rgba(0,0,0,.75);
   }
@@ -72,13 +75,13 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --paper: #17150f; --paper-2: #211d16; --paper-sunk: #100e09;
-  --ink: #f3eee2; --ink-2: #bab2a3; --ink-3: #857c6d;
-  --rule: #332e24; --rule-2: #463f31;
-  --seal: #e2705c; --seal-deep: #b94636; --seal-soft: #34201b;
-  --seal-fill-a: #b94636; --seal-fill-b: #93301f;
-  --jade: #63ad88; --amber: #dca648; --slate: #7ba7cc; --gold: #a98a48;
-  --wash-1: rgba(226,112,92,.10); --wash-2: rgba(169,138,72,.07);
+  --paper: #141219; --paper-2: #1d1a25; --paper-sunk: #0f0e14;
+  --ink: #f0edf6; --ink-2: #b5b0c4; --ink-3: #807b90;
+  --rule: #2a2634; --rule-2: #3a3549;
+  --seal: #ef7191; --seal-deep: #b52348; --seal-soft: #331a25;
+  --seal-fill-a: #b52348; --seal-fill-b: #8a1436;
+  --jade: #4fb193; --amber: #b98ede; --slate: #7f9fe4; --hairline: #6f6790;
+  --wash-1: rgba(239,113,145,.10); --wash-2: rgba(127,159,228,.08);
   --shadow: 0 1px 2px rgba(0,0,0,.45), 0 6px 20px -8px rgba(0,0,0,.65);
   --shadow-lg: 0 2px 4px rgba(0,0,0,.5), 0 18px 40px -16px rgba(0,0,0,.75);
 }
@@ -150,7 +153,7 @@ body::before {
   content: "";
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, var(--gold), transparent);
+  background: linear-gradient(90deg, var(--hairline), transparent);
   opacity: .55;
 }
 
@@ -352,7 +355,6 @@ body::before {
 /* Boş kategori seçilebilir durmasın: sayısı sıfırsa oturum da açılmaz. */
 .mode.is-empty { opacity: .45; cursor: default; }
 .mode.is-empty:hover { background: var(--paper-2); }
-.mode.is-active em { background: rgba(255,255,255,.22); color: #fff; }
 
 /* ═══════════ ÇALIŞMA OTURUMU ═══════════ */
 .session-bar {
@@ -812,7 +814,7 @@ body::before {
   max-width: min(420px, calc(100vw - 32px));
   width: 100%;
 }
-.dialog::backdrop { background: rgba(10,8,6,.5); backdrop-filter: blur(2px); }
+.dialog::backdrop { background: rgba(12,10,18,.55); backdrop-filter: blur(2px); }
 .dialog[open] { animation: dialog-in .16s ease-out; }
 @keyframes dialog-in {
   from { opacity: 0; transform: translateY(8px) scale(.98); }

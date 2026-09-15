@@ -1477,7 +1477,7 @@ function applyTheme(theme) {
   for (const m of els('meta[name="theme-color"]')) m.remove();
   const meta = document.createElement('meta');
   meta.name = 'theme-color';
-  meta.content = dark ? '#14120f' : '#f7f2e6';
+  meta.content = dark ? '#141219' : '#f5f3f7';
   document.head.appendChild(meta);
 
   els('[data-theme-pick]').forEach((b) =>

@@ -3,7 +3,7 @@
   "appName": "Inkwell",
   "webDir": "www",
   "android": {
-    "backgroundColor": "#faf7f2",
+    "backgroundColor": "#f5f3f7",
     "allowMixedContent": false
   },
   "server": {

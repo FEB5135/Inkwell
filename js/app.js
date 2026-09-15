@@ -519,8 +519,12 @@ function teardownWriters() {
   $('write-grid').innerHTML = '';
 }
 
-const cssVar = (name) =>
-  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+/**
+ * hanzi-writer renkleri CSS'ten okuyor; olmayan bir belirteç boş dize döner ve
+ * kalem görünmez olur — hata da vermez. Yedek renk bunu görünür kılıyor.
+ */
+const cssVar = (name, fallback = '#000000') =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 
 /**
  * Yazma kartını kurar.
@@ -571,7 +575,7 @@ async function setupWriters(note) {
       showOutline: false,
       showHintAfterMisses: 3,
       strokeColor: cssVar('--ink'),
-      drawingColor: cssVar('--seal'),
+      drawingColor: cssVar('--accent'),
       outlineColor: cssVar('--rule-2'),
       highlightColor: cssVar('--amber'),
       drawingWidth: 22,

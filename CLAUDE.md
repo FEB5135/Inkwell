@@ -163,7 +163,16 @@ yeniden başlatmak gerekebilir; APK'nın içinde doğru ikon vardır.
 
 **hanzi-writer fare/dokunma olaylarını dinler**, işaretçi (pointer) olaylarını
 değil. Kalem bunları zaten üretir. Test ederken `mousemove` SVG'ye
-gönderilmeli, `mouseup` belgeye.
+gönderilmeli, `mouseup` belgeye. Koordinat hesaplarken kendi varsayımını
+kurma: kütüphane SVG'nin içine kendi `translate(...) scale(...)` grubunu
+koyuyor, karakter koordinatını ekrana çevirmek için o grubun
+`getScreenCTM()` matrisi kullanılmalı.
+
+**hanzi-writer geçersiz renkte çöker.** Renkleri CSS belirteçlerinden okuyoruz
+(`cssVar`); olmayan bir belirteç boş dize döndürür, kütüphane de
+`Invalid color:` diye atar ve **çizim tamamen durur**. Belirteç adı
+değiştirildiğinde `cssVar` çağrıları da güncellenmeli; `cssVar`'ın yedek
+rengi bu sessiz kırılmayı görünür kılmak için var.
 
 **Gömülü tarayıcıda servis çalışanı kaydolmaz.** Konsoldaki "unknown error
 when fetching the script" bundan; gerçek tarayıcıda sorun değil.

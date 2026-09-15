@@ -35,7 +35,7 @@ duruyorlar. `index.html`'deki tek `<dialog>` üstünden `askText()` ve
 
 ```
 index.html            arayüz iskeleti (data-i18n işaretli)
-css/app.css           tema — karmen & serin kağıt, açık/koyu
+css/app.css           tema — nötr zemin + karmen vurgu, açık/koyu
 js/app.js             ekranlar, oturum akışı
 js/i18n.js            tr/en sözlüğü
 js/store.js           IndexedDB, yedekleme
@@ -125,11 +125,16 @@ xi+an mı belirsiz, en az parçalı bölünme seçilir.
 **Sözlük anahtarları hece ayırmadan geçmez.** CC-CEDICT okunuşları zaten
 ayrılmış; 125 bin kaydı çözümlemek açılışı boşuna yavaşlatır.
 
-**Vurgu maviye çalan bir kırmızı.** Sıcak zencifre kırmızısı (朱砂) sarımsı
-kağıtla birleşince soluk ve tozlu duruyordu. Palet karmen (`#b81d43`) ve serin
-bir zemin üstüne kuruldu; ikincil vurgu mavi. "Zor" rengi de sarıdan mora
-alındı — hardal, serin ailenin içinde yamalı duruyordu. Üç sayaç şeridi
-böylece mavi → mor → karmen olarak tek aile okunuyor.
+**Zemin tonsuz, renk yalnız vurgularda.** Gri tonlarında kalan en ufak
+sıcaklık geniş yüzeyde kahverengiye çalıyor; zemin bu yüzden düz beyaz
+(`#ffffff`) ve düz siyah (`#000000`), aradaki griler de nötr. Arka planda
+ışıma yok. Vurgu, maviye çalan bir kırmızı: karmen (`#b81d43`) — sıcak
+zencifre kırmızısı (朱砂) soluk ve tozlu duruyordu. İkincil vurgu mavi,
+"zor" rengi de sarıdan mora alındı; hardal bu ailede yamalı duruyordu.
+Üç sayaç şeridi böylece mavi → mor → karmen olarak tek aile okunuyor.
+
+Açık temada zemin ile kart aynı beyaz olduğu için **kartları ayıran tek şey
+kenarlık**: `--rule` tonuna dokunurken bunu hesaba kat.
 
 **Marka karakteri 永.** 永字八法'nın karakteri: sekiz temel strok türünü birden
 içerdiği için hat yazısında ilk yazılan karakter. Beş stroklu olması küçük

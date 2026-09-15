@@ -111,16 +111,12 @@ ama kartları ve zamanlaması durur; kendi kategorisinden istendiği zaman
 Ekleme hedefi (`lastDeck`) ile çalışılan deste (`studyDeck`) ayrı ayarlar.
 Tek ayardılar; yeni deste açmak çalışma kuyruğunu sessizce boşaltıyordu.
 
-**Oturum sınırlı.** Havuzun tamamı bir oturuma sığmıyor: 500 karakter üç kart
-türüyle 1500 kart eder. `sessionLimit` (varsayılan 40, Ayarlar → Oturum) her
-kategori için geçerli — rozetler de bu sayıyı gösteriyor, yoksa düğmeyle
-çelişiyorlar. Havuz sınırı aşınca altta kaç kart geleceği yazıyor ve "Hepsini
-çalış" bağlantısı uyarıdan sonra sınırsız oturum açıyor.
-
-Hangi kartların geleceğini `selectForSession` seçiyor, zaten biriken zamanlama
-verisinden: payın üçte biri yeni kartlara ayrılıyor (yoksa biriken tekrar
-yığını yüzünden yeni eklenen bölüm günlerce sıraya giremezdi), kalanı vadesi
-gelenlere en uzun bekleyenden başlayarak, yer kalırsa vadesi gelmemişlere.
+**Oturum başına kart sınırı yok — denendi ve kaldırıldı.** Sınır, 59 kartla 60
+kart arasında keyfi bir davranış farkı yaratıyordu. Havuzun tamamı hâlâ tek
+oturumda geliyor; bunun bedeli yalnızca **bir kez** söyleniyor: kart sayısı
+`POOL_WARN_AT`'i (100) ilk geçtiğinde ekleme sonrası bir bilgi diyaloğu çıkıp
+havuzu daraltma yollarını hatırlatıyor (deste, kategori, "öğrenildi").
+`poolWarned` ayarı bunun tekrarını engelliyor.
 
 **Tekrar geçmişi 90 günde budanıyor** (`REVIEW_KEEP_DAYS`). Geçmiş yalnız
 "bugün kaç kart" sayacı için okunuyor ama hiç silinmiyordu: 500 karakter ve

@@ -309,7 +309,8 @@ const DEFAULTS = {
   // boşaltıyordu; ayrıldılar.
   lastDeck: null,
   studyDeck: 'all',
-  sessionLimit: 40,
+  // Havuz büyüdüğünde bir kez gösterilen uyarı; gösterildiyse bir daha çıkmaz.
+  poolWarned: false,
 };
 
 export async function getSettings() {

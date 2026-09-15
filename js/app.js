@@ -4,7 +4,7 @@
 import * as db from './store.js';
 import * as dict from './dict.js';
 import { toMarks, toNumbers, answerMatches, matchesButTone, looksLikePinyin } from './pinyin.js';
-import { schedule, dueLabel, buildQueue, selectForSession, startOfToday, AGAIN, GOOD } from './srs.js';
+import { schedule, dueLabel, buildQueue, startOfToday, AGAIN, GOOD } from './srs.js';
 import { comparePinyin, compareMeaning, suggestGrade } from './grade.js';
 import { t, setLang, getLang, detect, applyDom, LANGUAGES } from './i18n.js';
 import * as strokes from './strokes.js';
@@ -104,14 +104,7 @@ function go(screen) {
 /* ═══════════════════ çalışma ═══════════════════ */
 
 function bindStudy() {
-  $('btn-start').addEventListener('click', () => startSession(false));
-  $('btn-study-all').addEventListener('click', async () => {
-    const n = scopedCards().length;
-    const yes = await askConfirm(t('confirm.studyAll', { n }), t('confirm.studyAllText'), {
-      ok: t('study.studyAllOk'),
-    });
-    if (yes) startSession(true);
-  });
+  $('btn-start').addEventListener('click', startSession);
   $('btn-quit').addEventListener('click', () => endSession(true));
   $('btn-reveal').addEventListener('click', revealOrCheck);
   $('btn-done-back').addEventListener('click', () => {
@@ -177,12 +170,8 @@ function renderModes() {
   const inDeck = (c) =>
     !deckId || deckId === 'all' || state.notes.get(c.noteId)?.deckId === deckId;
 
-  // Rozet, o kategoriyi seçersen gelecek kart sayısını gösteriyor — oturum
-  // sınırı da buna dahil. Havuzu gösterip düğmede başka sayı yazmak, daha önce
-  // düzeltilen "rozetler rastgele duruyor" sorununun aynısını geri getirirdi.
-  const limit = sessionLimit();
-  const countFor = (type) => {
-    const havuz = state.cards.filter((c) => {
+  const countFor = (type) =>
+    state.cards.filter((c) => {
       const note = state.notes.get(c.noteId);
       if (!note || !inDeck(c)) return false;
       if (!enabled.includes(c.type)) return false;
@@ -190,8 +179,6 @@ function renderModes() {
       if (type !== 'all' && type !== LEARNED && c.type !== type) return false;
       return true;
     }).length;
-    return limit ? Math.min(havuz, limit) : havuz;
-  };
 
   const options = [['all', t('mode.all')], ...enabled.map((type) => [type, typeLabel(type)])];
   // Kategori ancak işaretlenmiş kayıt varken görünür; boşken gereksiz duruyor.
@@ -229,22 +216,10 @@ async function renderStudyHome() {
   $('count-today').textContent = reviewsToday;
   $('count-mature').textContent = mature;
 
-  // Düğmedeki sayı gerçekten gelecek kart sayısı olmalı; havuzun tamamı
-  // değil. Aradaki fark varsa altta açıkça söyleniyor.
-  const limit = sessionLimit();
-  const gelecek = limit && limit < cards.length ? limit : cards.length;
-
   $('btn-start').disabled = cards.length === 0;
   $('btn-start').textContent = cards.length
-    ? t('study.startN', { n: gelecek })
+    ? t('study.startN', { n: cards.length })
     : t('study.noCards');
-
-  const kirpildi = gelecek < cards.length;
-  $('session-note').hidden = !kirpildi;
-  if (kirpildi) {
-    $('session-note-text').textContent = t('study.limited', { n: cards.length, k: gelecek });
-    $('btn-study-all').textContent = t('study.studyAll');
-  }
   $('study-empty').hidden = cards.length > 0;
   $('study-empty').innerHTML = t('study.emptyNote', {
     link: `<button class="linkish" data-goto="add">${t('study.emptyLink')}</button>`,
@@ -260,12 +235,8 @@ async function renderStudyHome() {
     : `<div>${t('study.empty')}</div>`;
 }
 
-/** Sıfır = sınırsız. */
-const sessionLimit = () => state.settings.sessionLimit ?? 0;
-
-async function startSession(all = false) {
-  const pool = scopedCards();
-  const queue = buildQueue(selectForSession(pool, all ? 0 : sessionLimit()));
+async function startSession() {
+  const queue = buildQueue(scopedCards());
   if (!queue.length) return;
 
   state.session = { queue, total: queue.length, done: 0, correct: 0 };
@@ -815,6 +786,7 @@ async function quickAdd() {
   $('dict-results').innerHTML = '';
   $('dict-status').textContent = '';
   await refresh();
+  await maybeWarnPool();
 }
 
 async function runSearch() {
@@ -874,6 +846,7 @@ async function addFromDict(hit, btn) {
   }));
   toast(t('toast.added', { x: hit.hanzi }));
   await refresh();
+  await maybeWarnPool();
 }
 
 const currentDeck = () => state.settings.lastDeck && state.settings.lastDeck !== 'all'
@@ -1073,6 +1046,7 @@ async function commitBulk() {
   $('btn-bulk-add').disabled = true;
   bulkParsed = [];
   await refresh();
+  await maybeWarnPool();
 }
 
 async function addManual() {
@@ -1086,6 +1060,29 @@ async function addManual() {
   $('m-hanzi').value = $('m-pinyin').value = $('m-meaning').value = '';
   toast(t('toast.added', { x: hanzi }));
   await refresh();
+  await maybeWarnPool();
+}
+
+/**
+ * Havuz büyüdüğünde bir kez uyarır.
+ *
+ * Oturum başına kart sınırı denendi ve kaldırıldı: 59 kartla 60 kart arasında
+ * keyfi bir davranış farkı yaratıyordu. Havuzun tamamı hâlâ tek oturumda
+ * geliyor — sadece eşiği ilk geçtiğinde bunun ne demek olduğu söyleniyor ve
+ * havuzu daraltmanın yolları hatırlatılıyor. Bir daha çıkmıyor.
+ */
+const POOL_WARN_AT = 100;
+
+async function maybeWarnPool() {
+  if (state.settings.poolWarned) return;
+  if (state.cards.length < POOL_WARN_AT) return;
+
+  state.settings.poolWarned = true;
+  await db.setSetting('poolWarned', true);
+  await askConfirm(t('pool.warnTitle', { n: state.cards.length }), t('pool.warnText'), {
+    ok: t('dialog.gotIt'),
+    cancel: false,
+  });
 }
 
 /* ═══════════════════ havuz ═══════════════════ */
@@ -1257,19 +1254,6 @@ function bindSettings() {
     state.settings.lang = e.target.value;
     await db.setSetting('lang', e.target.value);
     await refresh();
-    renderStudyHome();
-  });
-
-  const limitSel = $('opt-limit');
-  limitSel.innerHTML = [10, 20, 40, 60, 100, 0]
-    .map((v) => `<option value="${v}">${v ? v : escapeHtml(t('set.sessionAll'))}</option>`)
-    .join('');
-  limitSel.value = String(s.sessionLimit ?? 40);
-  limitSel.addEventListener('change', async (e) => {
-    state.settings.sessionLimit = Number(e.target.value);
-    await db.setSetting('sessionLimit', state.settings.sessionLimit);
-    // Rozetler de sınırı gösteriyor; onlar tazelenmezse düğmeyle çelişiyor.
-    renderModes();
     renderStudyHome();
   });
 
@@ -1559,7 +1543,10 @@ function openDialog({ title, text = '', value = null, ok, cancel, danger = false
 
   okBtn.textContent = ok ?? t('dialog.ok');
   okBtn.classList.toggle('btn--danger', danger);
-  $('dialog-cancel').textContent = cancel ?? t('dialog.cancel');
+  // cancel === false: onay değil bilgi verir, tek düğme yeter.
+  const cancelBtn0 = $('dialog-cancel');
+  cancelBtn0.hidden = cancel === false;
+  cancelBtn0.textContent = cancel === false ? '' : cancel ?? t('dialog.cancel');
 
   const cancelBtn = $('dialog-cancel');
 

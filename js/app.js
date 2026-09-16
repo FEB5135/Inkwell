@@ -753,11 +753,10 @@ function chineseVoice() {
  */
 function speak(text) {
   if (isNative()) {
-    const tts = nativePlugin('TextToSpeech');
-    if (!tts) return;
     // Üst üste basılan kartlarda öncekini kesip yenisini söylesin.
-    tts.stop().catch(() => {});
-    tts.speak({ text, lang: 'zh-CN', rate: 0.9 }).catch((err) => console.error(err));
+    nativeInvoke('TextToSpeech', 'stop').catch(() => {});
+    nativeInvoke('TextToSpeech', 'speak', { text, lang: 'zh-CN', rate: 0.9 })
+      .catch((err) => console.error(err));
     return;
   }
 
@@ -1406,7 +1405,7 @@ function bindSettings() {
   );
 
   $('btn-tts-install').addEventListener('click', () => {
-    nativePlugin('TextToSpeech')?.openInstall?.().catch(() => {});
+    nativeInvoke('TextToSpeech', 'openInstall').catch(() => {});
   });
 
   $('opt-tts').addEventListener('change', async (e) => {
@@ -1428,16 +1427,14 @@ async function updateTtsStatus() {
   const node = $('tts-status');
 
   if (isNative()) {
-    const tts = nativePlugin('TextToSpeech');
-    if (!tts) { node.textContent = t('set.ttsUnsupported'); return; }
     try {
       // Cihazda Çince ses verisi kurulu değilse motor var ama konuşamıyor;
       // ayrımı söylemek gerekiyor, yoksa "ses çalışmıyor" diye kalıyor.
-      const { supported } = await tts.isLanguageSupported({ lang: 'zh-CN' });
+      const { supported } = await nativeInvoke('TextToSpeech', 'isLanguageSupported', { lang: 'zh-CN' });
       node.textContent = supported ? t('set.ttsNativeReady') : t('set.ttsNoChinese');
-      $('btn-tts-install').hidden = supported;
-    } catch {
-      node.textContent = t('set.ttsUnsupported');
+      $('btn-tts-install').hidden = Boolean(supported);
+    } catch (err) {
+      node.textContent = `${t('set.ttsUnsupported')} (${err?.message ?? err})`;
     }
     return;
   }
@@ -1453,14 +1450,26 @@ async function updateTtsStatus() {
 const isNative = () => Boolean(window.Capacitor?.isNativePlatform?.());
 
 /**
- * Native eklentiye köprü üstünden ulaşıyoruz.
+ * Native eklenti yöntemini köprü üstünden çağırır.
  *
  * Eklentinin JS paketini `import` etmek çıplak modül adı demek, o da paketleyici
- * demek; projenin derleme adımı yok. `registerPlugin` ise Capacitor'ın kendi
- * global'inde duruyor ve yöntemleri native tarafın bildirdiği başlıklardan
- * çözüyor — paketleyiciye gerek kalmıyor.
+ * demek; projenin derleme adımı yok. Bu yüzden köprüye doğrudan gidiyoruz.
+ *
+ * Tuzak: `registerPlugin` **native köprüde yok**. Cihaza enjekte edilen
+ * `native-bridge.js` yalnız `isNativePlatform`, `nativePromise`, `toNative`
+ * gibi ilkelleri kuruyor; `registerPlugin` ve `PluginHeaders`
+ * `@capacitor/core`'un JS paketinden geliyor ve biz onu hiç yüklemiyoruz.
+ * Yalnız `registerPlugin`'e dayanınca cihazda dosya, paylaşım ve ses birden
+ * "köprü yok" diye düşüyordu. `nativePromise` her zaman var — zaten
+ * `registerPlugin`'in kendi içinde kullandığı ilkel de bu.
  */
-const nativePlugin = (name) => window.Capacitor?.registerPlugin?.(name);
+function nativeInvoke(plugin, method, options = {}) {
+  const cap = window.Capacitor;
+  if (cap?.Plugins?.[plugin]?.[method]) return cap.Plugins[plugin][method](options);
+  if (cap?.registerPlugin) return cap.registerPlugin(plugin)[method](options);
+  if (cap?.nativePromise) return cap.nativePromise(plugin, method, options);
+  return Promise.reject(new Error('no Capacitor bridge'));
+}
 
 /**
  * Yedeği dışarı verir.
@@ -1513,15 +1522,12 @@ function downloadBackup(name, json) {
  * okunabilsin diye.
  */
 async function shareBackup(name, json) {
-  const Filesystem = nativePlugin('Filesystem');
-  const Share = nativePlugin('Share');
-  if (!Filesystem || !Share) throw new Error('no Capacitor bridge');
-
   const denemeler = [];
   for (const directory of ['CACHE', 'DATA', 'DOCUMENTS', 'EXTERNAL_CACHE']) {
     let uri;
     try {
-      ({ uri } = await Filesystem.writeFile({ path: name, data: json, directory, encoding: 'utf8' }));
+      ({ uri } = await nativeInvoke('Filesystem', 'writeFile',
+        { path: name, data: json, directory, encoding: 'utf8' }));
     } catch (err) {
       denemeler.push(`${directory}→write: ${err?.message ?? err}`);
       continue;
@@ -1531,7 +1537,8 @@ async function shareBackup(name, json) {
       continue;
     }
     try {
-      await Share.share({ title: name, files: [uri], dialogTitle: t('set.shareBackup') });
+      await nativeInvoke('Share', 'share',
+        { title: name, files: [uri], dialogTitle: t('set.shareBackup') });
       return;
     } catch (err) {
       const m = String(err?.message ?? err);

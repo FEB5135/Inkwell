@@ -232,8 +232,21 @@ yedeğiyle duruyor. Sözlük hâlâ önce önbellekten (6,8 MB).
 Dışa aktarma tarayıcıda blob bağlantısıyla iniyor; **Android'de inmiyor**,
 WebView'da indirme dinleyicisi yok. Orada dosya diske yazılıp paylaşım
 penceresi açılıyor (`@capacitor/filesystem` + `@capacitor/share`).
-Eklentilere `Capacitor.registerPlugin` ile köprü üstünden ulaşılıyor — JS
-paketini `import` etmek paketleyici gerektirirdi, projenin derleme adımı yok.
+Eklentilere köprü üstünden ulaşılıyor (`nativeInvoke`) — JS paketini `import`
+etmek paketleyici gerektirirdi, projenin derleme adımı yok.
+
+**`registerPlugin` native köprüde YOK.** Cihaza enjekte edilen
+`native-bridge.js` yalnız `isNativePlatform`, `nativePromise`, `toNative`,
+`nativeCallback` gibi ilkelleri kuruyor; `registerPlugin` ve `PluginHeaders`
+`@capacitor/core`'un JS paketinden geliyor ve o paket hiç yüklenmiyor.
+`Capacitor.Plugins` de köprüde atanmıyor. Yalnız `registerPlugin`'e dayanmak
+cihazda dosya, paylaşım ve sesin üçünü birden "no Capacitor bridge" ile
+düşürüyordu — tarayıcıda hiç görünmeyen bir kırılma. `nativeInvoke` üç yolu
+sırayla deniyor ve `nativePromise`'e düşüyor; o her zaman var.
+
+**Native yolu sınarken köprüyü gerçek cihazdaki gibi taklit et:** yalnız
+`isNativePlatform` + `nativePromise`. `registerPlugin` taklidi kurmak, tam da
+cihazda bulunmayan API'yi varsaymak demek — bu hata böyle kaçtı.
 
 Bu yolun iki kırılgan noktası var, ikisi de cihazda **sessizce** başarısız
 oluyordu:

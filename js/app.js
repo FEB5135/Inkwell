@@ -753,14 +753,15 @@ function chineseVoice() {
  */
 function speak(text) {
   if (isNative()) {
-    // Üst üste basılan kartlarda öncekini kesip yenisini söylesin.
-    nativeInvoke('TextToSpeech', 'stop').catch(() => {});
-    nativeInvoke('TextToSpeech', 'speak', { text, lang: 'zh-CN', rate: 0.9 })
-      .catch((err) => console.error(err));
-    return;
+    // Ayrıca `stop` göndermiyoruz: eklentinin `speak`'i varsayılan kuyruk
+    // kuralında (FLUSH) zaten içeride durduruyor. Bizim ayrı gönderdiğimiz
+    // stop, yeni konuşmadan *sonra* varıp onu iptal edebiliyordu — ses hiç
+    // çıkmamasının sebebi buydu.
+    return nativeInvoke('TextToSpeech', 'speak', { text, lang: 'zh-CN', rate: 0.9 })
+      .catch((err) => { console.error(err); throw err; });
   }
 
-  if (!('speechSynthesis' in window)) return;
+  if (!('speechSynthesis' in window)) return Promise.resolve();
   const voice = chineseVoice();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'zh-CN';
@@ -768,6 +769,7 @@ function speak(text) {
   u.rate = 0.85;
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
+  return Promise.resolve();
 }
 
 /* ═══════════════════ ekleme ═══════════════════ */
@@ -1416,8 +1418,16 @@ function bindSettings() {
   $('opt-tts').addEventListener('change', async (e) => {
     state.settings.tts = e.target.checked;
     await db.setSetting('tts', e.target.checked);
-    if (e.target.checked) speak('你好');
-    updateTtsStatus();
+    await updateTtsStatus();
+    if (!e.target.checked) return;
+
+    // Açılışta bir deneme yapıp sonucunu yazıyoruz. Hata yalnız konsola
+    // gidince "ses çıkmıyor" deyip kalınıyordu; cihazda konsol da yok.
+    try {
+      await speak('你好');
+    } catch (err) {
+      $('tts-status').textContent = `${t('set.ttsFailed')}: ${err?.message ?? err}`;
+    }
   });
 
   $('btn-export').addEventListener('click', exportBackup);

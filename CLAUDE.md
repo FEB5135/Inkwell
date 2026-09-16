@@ -300,6 +300,14 @@ Motorun var olması yetmiyor: cihazda **Çince ses verisi kurulu olmalı**. Ayar
 → Ses bu ayrımı söylüyor (`isLanguageSupported('zh-CN')`) ve kurulu değilse
 kurulum adımlarını gösteren bir düğme çıkıyor.
 
+**Ayrıca `stop` gönderme.** Eklentinin `speak`'i varsayılan kuyruk kuralında
+(FLUSH) zaten içeride durduruyor. Bizim ayrı gönderdiğimiz `stop`, yeni
+konuşmadan *sonra* varıp onu iptal edebiliyordu: durum "konuşabiliyor" diyor,
+ses hiç çıkmıyordu.
+
+Ses açıldığında bir deneme yapılıp **sonucu ekrana yazılıyor**. Hata yalnız
+konsola giderse cihazda görünmüyor; "ses çıkmıyor" deyip kalınıyor.
+
 Düğme eklentinin `openInstall`'ını **çağırmıyor**: o `ACTION_CHECK_TTS_DATA`
 yayınlıyor, bu bir sorgu niyeti ve tek başına açılınca çoğu cihazda hiçbir şey
 göstermiyor. Sistem ayarlarını doğrudan açmak native kod ister — Capacitor

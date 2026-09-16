@@ -298,7 +298,13 @@ motoru kullanılıyor (`@capacitor-community/text-to-speech`), köprü üstünde
 
 Motorun var olması yetmiyor: cihazda **Çince ses verisi kurulu olmalı**. Ayarlar
 → Ses bu ayrımı söylüyor (`isLanguageSupported('zh-CN')`) ve kurulu değilse
-sistemin ses paketi ekranını açan bir düğme gösteriyor (`openInstall`).
+kurulum adımlarını gösteren bir düğme çıkıyor.
+
+Düğme eklentinin `openInstall`'ını **çağırmıyor**: o `ACTION_CHECK_TTS_DATA`
+yayınlıyor, bu bir sorgu niyeti ve tek başına açılınca çoğu cihazda hiçbir şey
+göstermiyor. Sistem ayarlarını doğrudan açmak native kod ister — Capacitor
+`intent://` adreslerini çözmüyor, `launchIntent` yalnız `ACTION_VIEW` deniyor.
+Bu yüzden düğme, adımları anlatan bir diyalog açıyor.
 
 **Açılışta `navigator.storage.persist()` isteniyor.** İşaretlenmemiş
 IndexedDB'yi tarayıcı, disk sıkıştığında haber vermeden silebiliyor — uygulamanın

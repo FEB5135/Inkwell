@@ -823,7 +823,7 @@ body {
   gap: 12px;
 }
 .dialog-title { margin: 0; font-size: 1.08rem; font-weight: 650; letter-spacing: -.01em; }
-.dialog-text { margin: 0; color: var(--ink-2); font-size: .9rem; }
+.dialog-text { margin: 0; color: var(--ink-2); font-size: .9rem; white-space: pre-line; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
 .toast {

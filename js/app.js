@@ -1405,7 +1405,12 @@ function bindSettings() {
   );
 
   $('btn-tts-install').addEventListener('click', () => {
-    nativeInvoke('TextToSpeech', 'openInstall').catch(() => {});
+    // Eklentinin openInstall'ı ACTION_CHECK_TTS_DATA yayınlıyor — bu bir
+    // sorgu niyeti, tek başına açılınca çoğu cihazda hiçbir şey göstermiyor.
+    // Sistem ayarlarını açmak native kod ister; onun yerine adımları veriyoruz.
+    askConfirm(t('set.ttsInstallTitle'), t('set.ttsInstallSteps'), {
+      ok: t('dialog.gotIt'), cancel: false,
+    });
   });
 
   $('opt-tts').addEventListener('change', async (e) => {

@@ -14,7 +14,10 @@ https://github.com/FEB5135/Inkwell
 **Kullanıcıda Çince klavye yok, İngilizce klavye var.** Uygulamanın her yerinde
 bu varsayım geçerli. Karakter yazdırmak isteyen hiçbir akış kurulamaz; okunuş
 yazdırılır. Ton sayıyla girilir (`hao3`), ekranda işaretle gösterilir (`hǎo`);
-cevap denetiminde iki yazım da kabul edilir.
+cevap denetiminde iki yazım da kabul edilir. Boşluklu yazım da kabul:
+`lao 3 shi 1` — tablet klavyesinde rakamı ayrı yazmak doğal. Ton, `decompose`
+içinde son **harfe** bağlanıyor; son girdiye bağlanırsa araya giren boşluk
+ayracına düşüp ton büsbütün kayboluyor.
 
 **Veri cihazda kalır.** Hesap yok, sunucuya hiçbir kullanıcı verisi gitmez.
 IndexedDB + JSON yedek. Kayıtlar `updatedAt` ve silme mezar taşı taşır; ileride
@@ -257,6 +260,17 @@ destelerin id'leri farklı olduğu için, oralardaki aynı karakter birleşmez.
 
 Cihaza ait ayarlar (`lang`, `theme`, `lastDeck`, `studyDeck`, `mode`) yedekten
 gelmez; yedeğin işi kartları taşımak.
+
+## Ses
+
+Android WebView **Web Speech API'sini taşımıyor** — `speechSynthesis` orada hiç
+tanımlı değil, APK'da ses hiç çalışmıyordu. Native tarafta cihazın kendi TTS
+motoru kullanılıyor (`@capacitor-community/text-to-speech`), köprü üstünden
+(`Capacitor.registerPlugin`), dosya/paylaşım eklentileriyle aynı desen.
+
+Motorun var olması yetmiyor: cihazda **Çince ses verisi kurulu olmalı**. Ayarlar
+→ Ses bu ayrımı söylüyor (`isLanguageSupported('zh-CN')`) ve kurulu değilse
+sistemin ses paketi ekranını açan bir düğme gösteriyor (`openInstall`).
 
 **Açılışta `navigator.storage.persist()` isteniyor.** İşaretlenmemiş
 IndexedDB'yi tarayıcı, disk sıkıştığında haber vermeden silebiliyor — uygulamanın

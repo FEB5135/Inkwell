@@ -74,7 +74,13 @@ function decompose(input) {
   for (const raw of unifyU(String(input))) {
     const ch = raw.toLowerCase();
     if (ch >= '1' && ch <= '5') {
-      if (letters.length) tones[letters.length - 1] = Number(ch);
+      // Ton, son **harfe** bağlanır — son girdiye değil. Aradaki boşluk
+      // "lao 3 shi 1" gibi yazımlarda ayraç olarak kaydediliyor; tonu oraya
+      // yazınca ton büsbütün kayboluyor ve cevap "ton yanlış" sayılıyordu.
+      // Tablet klavyesinde rakamı ayrı yazmak doğal, yazımı kabul ediyoruz.
+      let i = letters.length - 1;
+      while (i >= 0 && letters[i] === null) i--;
+      if (i >= 0) tones[i] = Number(ch);
       continue;
     }
     const marked = FROM_MARK.get(ch);

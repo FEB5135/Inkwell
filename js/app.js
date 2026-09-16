@@ -743,7 +743,24 @@ function chineseVoice() {
   return voices.find((v) => /^zh[-_]?(CN|Hans)?/i.test(v.lang)) ?? null;
 }
 
+/**
+ * Karakteri seslendirir.
+ *
+ * Android WebView Web Speech API'sini taşımıyor — `speechSynthesis` orada hiç
+ * tanımlı değil, bu yüzden APK'da ses hiç çalışmıyordu. Native tarafta işi
+ * cihazın kendi TTS motoru yapıyor; eklentiye, dosya/paylaşımda olduğu gibi
+ * köprü üstünden ulaşılıyor (paketleyici gerekmesin diye).
+ */
 function speak(text) {
+  if (isNative()) {
+    const tts = nativePlugin('TextToSpeech');
+    if (!tts) return;
+    // Üst üste basılan kartlarda öncekini kesip yenisini söylesin.
+    tts.stop().catch(() => {});
+    tts.speak({ text, lang: 'zh-CN', rate: 0.9 }).catch((err) => console.error(err));
+    return;
+  }
+
   if (!('speechSynthesis' in window)) return;
   const voice = chineseVoice();
   const u = new SpeechSynthesisUtterance(text);
@@ -1388,6 +1405,10 @@ function bindSettings() {
     $(id).addEventListener('change', syncTypes)
   );
 
+  $('btn-tts-install').addEventListener('click', () => {
+    nativePlugin('TextToSpeech')?.openInstall?.().catch(() => {});
+  });
+
   $('opt-tts').addEventListener('change', async (e) => {
     state.settings.tts = e.target.checked;
     await db.setSetting('tts', e.target.checked);
@@ -1403,8 +1424,24 @@ function bindSettings() {
   if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = updateTtsStatus;
 }
 
-function updateTtsStatus() {
+async function updateTtsStatus() {
   const node = $('tts-status');
+
+  if (isNative()) {
+    const tts = nativePlugin('TextToSpeech');
+    if (!tts) { node.textContent = t('set.ttsUnsupported'); return; }
+    try {
+      // Cihazda Çince ses verisi kurulu değilse motor var ama konuşamıyor;
+      // ayrımı söylemek gerekiyor, yoksa "ses çalışmıyor" diye kalıyor.
+      const { supported } = await tts.isLanguageSupported({ lang: 'zh-CN' });
+      node.textContent = supported ? t('set.ttsNativeReady') : t('set.ttsNoChinese');
+      $('btn-tts-install').hidden = supported;
+    } catch {
+      node.textContent = t('set.ttsUnsupported');
+    }
+    return;
+  }
+
   if (!('speechSynthesis' in window)) {
     node.textContent = t('set.ttsUnsupported');
     return;

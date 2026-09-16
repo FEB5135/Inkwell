@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Paylaşılacak dosyanın bulunduğu dizin burada tanımlı olmalı; değilse
+  FileProvider "Failed to find configured root" diye patlıyor ve yedek
+  dışarı verilemiyor. Filesystem eklentisinin hangi dizini seçtiği sürümle
+  değişebildiği için uygulamaya ait bütün konumlar tanınıyor.
+-->
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-path name="my_images" path="." />
-    <cache-path name="my_cache_images" path="." />
+    <files-path name="app_files" path="." />
+    <cache-path name="app_cache" path="." />
+    <external-files-path name="app_external_files" path="." />
+    <external-cache-path name="app_external_cache" path="." />
+    <external-path name="external" path="." />
 </paths>

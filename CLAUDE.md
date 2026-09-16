@@ -230,10 +230,25 @@ yedeğiyle duruyor. Sözlük hâlâ önce önbellekten (6,8 MB).
 ## Yedek ve eşitleme
 
 Dışa aktarma tarayıcıda blob bağlantısıyla iniyor; **Android'de inmiyor**,
-WebView'da indirme dinleyicisi yok. Orada dosya `Directory.CACHE`'e yazılıp
-paylaşım penceresi açılıyor (`@capacitor/filesystem` + `@capacitor/share`).
+WebView'da indirme dinleyicisi yok. Orada dosya diske yazılıp paylaşım
+penceresi açılıyor (`@capacitor/filesystem` + `@capacitor/share`).
 Eklentilere `Capacitor.registerPlugin` ile köprü üstünden ulaşılıyor — JS
 paketini `import` etmek paketleyici gerektirirdi, projenin derleme adımı yok.
+
+Bu yolun iki kırılgan noktası var, ikisi de cihazda **sessizce** başarısız
+oluyordu:
+
+1. Paylaşılan dosyanın dizini `android/app/src/main/res/xml/file_paths.xml`'de
+   tanımlı olmalı, yoksa FileProvider "Failed to find configured root" diye
+   reddediyor. Filesystem eklentisinin hangi dizini seçtiği sürümle
+   değişebiliyor (v8'de eşleme dış bir kütüphaneye taşındı), o yüzden
+   uygulamaya ait bütün konumlar tanınıyor.
+2. Paylaşım eklentisi yalnız `file://` kabul ediyor; `content://` gelirse
+   "only file urls are supported" diyor.
+
+`shareBackup` bu yüzden dizinleri sırayla deniyor (CACHE → DATA → DOCUMENTS →
+EXTERNAL_CACHE) ve **her denemenin hatasını biriktirip ekrana yazıyor**. Genel
+bir "olmadı" mesajı, cihazda neyin kırıldığını anlamayı imkânsız kılıyordu.
 
 **Aynı karakter birden çok destede bulunabilir.** Ders kitabında bir karakter
 birkaç bölümde geçebiliyor ve her bölümün destesinde kendi kaydı olabilmeli.

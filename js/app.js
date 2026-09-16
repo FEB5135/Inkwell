@@ -1482,6 +1482,10 @@ async function exportBackup() {
   } catch (err) {
     console.error(err);
     toast(t('toast.exportFail'));
+    // Hatanın kendisi ekranda kalsın. Genel bir "olmadı" mesajı, cihazda
+    // neyin kırıldığını anlamayı imkânsız kılıyordu; buradaki metin
+    // doğrudan eklentinin söylediği şey.
+    $('backup-status').textContent = `${t('toast.exportFail')}: ${err?.message ?? err}`;
     return;
   }
 
@@ -1498,20 +1502,45 @@ function downloadBackup(name, json) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+/**
+ * Yedeği native tarafta dosyaya yazıp paylaşım penceresini açar.
+ *
+ * İki kırılgan nokta var, ikisi de cihazda sessizce başarısız oluyordu:
+ * eklentinin hangi dizine yazdığı sürümle değişebiliyor (yazdığı yer
+ * `file_paths.xml`'de tanımlı değilse FileProvider reddediyor) ve paylaşım
+ * eklentisi yalnız `file://` adresi kabul ediyor. Bu yüzden dizinler sırayla
+ * deneniyor ve her başarısızlığın sebebi metne ekleniyor — hata ekranda
+ * okunabilsin diye.
+ */
 async function shareBackup(name, json) {
   const Filesystem = nativePlugin('Filesystem');
   const Share = nativePlugin('Share');
-  if (!Filesystem || !Share) throw new Error('no bridge');
+  if (!Filesystem || !Share) throw new Error('no Capacitor bridge');
 
-  // Önbellek dizini: uygulamanın FileProvider ayarı (`file_paths.xml`) burayı
-  // kapsıyor, paylaşım için okunabilir bir içerik adresi ancak böyle çıkıyor.
-  const { uri } = await Filesystem.writeFile({
-    path: name,
-    data: json,
-    directory: 'CACHE',
-    encoding: 'utf8',
-  });
-  await Share.share({ title: name, files: [uri], dialogTitle: t('set.shareBackup') });
+  const denemeler = [];
+  for (const directory of ['CACHE', 'DATA', 'DOCUMENTS', 'EXTERNAL_CACHE']) {
+    let uri;
+    try {
+      ({ uri } = await Filesystem.writeFile({ path: name, data: json, directory, encoding: 'utf8' }));
+    } catch (err) {
+      denemeler.push(`${directory}→write: ${err?.message ?? err}`);
+      continue;
+    }
+    if (!String(uri ?? '').startsWith('file://')) {
+      denemeler.push(`${directory}→uri: ${uri}`);
+      continue;
+    }
+    try {
+      await Share.share({ title: name, files: [uri], dialogTitle: t('set.shareBackup') });
+      return;
+    } catch (err) {
+      const m = String(err?.message ?? err);
+      // Kullanıcı paylaşım penceresini kapattıysa bu hata değil.
+      if (/cancel/i.test(m)) return;
+      denemeler.push(`${directory}→share: ${m}`);
+    }
+  }
+  throw new Error(denemeler.join(' | ') || 'bilinmeyen');
 }
 
 async function importBackup(e) {

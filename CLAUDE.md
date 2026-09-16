@@ -293,20 +293,30 @@ gelmez; yedeğin işi kartları taşımak.
 
 Android WebView **Web Speech API'sini taşımıyor** — `speechSynthesis` orada hiç
 tanımlı değil, APK'da ses hiç çalışmıyordu. Native tarafta cihazın kendi TTS
-motoru kullanılıyor (`@capacitor-community/text-to-speech`), köprü üstünden
-(`Capacitor.registerPlugin`), dosya/paylaşım eklentileriyle aynı desen.
+motoru kullanılıyor (`@capacitor-community/text-to-speech`), `nativeInvoke`
+üstünden, dosya/paylaşım eklentileriyle aynı desen.
 
-Motorun var olması yetmiyor: cihazda **Çince ses verisi kurulu olmalı**. Ayarlar
-→ Ses bu ayrımı söylüyor (`isLanguageSupported('zh-CN')`) ve kurulu değilse
-kurulum adımlarını gösteren bir düğme çıkıyor.
+Motorun var olması yetmiyor: cihazda **Çince ses verisi kurulu olmalı**.
 
-**Ayrıca `stop` gönderme.** Eklentinin `speak`'i varsayılan kuyruk kuralında
-(FLUSH) zaten içeride durduruyor. Bizim ayrı gönderdiğimiz `stop`, yeni
-konuşmadan *sonra* varıp onu iptal edebiliyordu: durum "konuşabiliyor" diyor,
-ses hiç çıkmıyordu.
+**`isLanguageSupported` bunu ayırt etmiyor — güvenme.** Android'e
+`isLanguageAvailable(zh-CN)` diye soruyor, Android de motor o dili *tanıyorsa*
+"evet" diyor; ses verisinin indirilmiş olup olmadığına bakmıyor. Sonuç: Ayarlar
+→ Ses "Çince konuşabiliyor" yazarken hiç ses çıkmayabiliyor. Gerçek hayatta bu
+tam olarak yaşandı ve teşhisi saatlerce yanlış yöne çekti — "destekliyor
+diyorsa sorun başka yerde" diye düşünüldü, oysa eksik olan yalnızca indirme
+adımıydı. Ses gelmiyorsa **önce ses verisinin indirilip indirilmediğini
+doğrula**.
 
 Ses açıldığında bir deneme yapılıp **sonucu ekrana yazılıyor**. Hata yalnız
-konsola giderse cihazda görünmüyor; "ses çıkmıyor" deyip kalınıyor.
+konsola giderse cihazda görünmüyor; "ses çıkmıyor" deyip kalınıyor. Ama bu da
+her şeyi yakalamıyor: ses verisi yokken `speak` hata vermeden sessizce
+başarısız olabiliyor.
+
+**Ayrıca `stop` gönderme.** Eklentinin `speak`'i varsayılan kuyruk kuralında
+(FLUSH) zaten içeride durduruyor; ayrı bir `stop` hem gereksiz hem de ikinci
+bir köprü çağrısı olduğu için teorik bir yarış yaratıyor. (Kaldırıldı, ama
+dürüst olmak gerekirse yukarıdaki sessizliğin sebebi bu değildi — sebep
+indirilmemiş ses verisiydi. İki sürüm bunu kovalamakla geçti.)
 
 Düğme eklentinin `openInstall`'ını **çağırmıyor**: o `ACTION_CHECK_TTS_DATA`
 yayınlıyor, bu bir sorgu niyeti ve tek başına açılınca çoğu cihazda hiçbir şey

@@ -15,7 +15,8 @@ gerektirmez.
 
 **Kart havuzu.** Karakterleri destelere (bölümlere) ayırarak biriktirirsin.
 
-**Üç yönlü çalışma.** Her kayıt için ayrı ayrı takip edilen üç kart üretilir:
+**Dört yönlü çalışma.** Her kayıt için ayrı ayrı takip edilen kartlar
+üretilir (yazma varsayılan kapalı):
 
 | Tür | Soru | Yazdığın | Ölçtüğü |
 |---|---|---|---|
@@ -30,7 +31,7 @@ aynı oturumda karışınca ikisi de yarım kalıyor. "Karışık" seçeneği de
 
 Yani 100 karakter girince 300 kart olur, tek tek kart hazırlamazsın.
 
-Üçünde de cevabı **yazarsın**. Kafadan cevaplayıp kendine not vermek
+Hepsinde cevabı **yazarsın**. Kafadan cevaplayıp kendine not vermek
 güvenilir değil: insan bildiğini sanır. Yazılan cevap ölçülebilir.
 
 **Cevap doğruya yakınlığına göre değerlendirilir.** Bir hecenin tonunu
@@ -60,6 +61,24 @@ varsayılan olarak kapalı — tablette Ayarlar'dan açarsın.
 
 Strok verisi 9.574 karakteri kapsıyor. Kapsamayan bir karakterde kart elle
 değerlendirmeye düşer.
+
+**Öğrenildi.** Doğru cevaptan sonra çıkan düğmeyle bir karakteri havuzdan
+çekersin: kartları ve zamanlaması durur ama normal sıraya girmez. Kendi
+kategorisinden istediğin zaman tazelersin, Havuz ekranından geri alırsın.
+Kart durumu değil, senin kararın.
+
+**Desteler arası taşıma.** Yanlış bölüme eklediğin karakteri Havuz'dan seçip
+başka desteye taşırsın; tekrar geçmişi korunur. Aynı karakter birden çok
+destede durabilir (ders kitabında birkaç bölümde geçebiliyor); "Tüm desteler"
+çalışılırken kopyalardan yalnız biri sıraya girer.
+
+**Görünüm.** Açık ve koyu tema, Ayarlar'dan ya da cihazın tercihine bırakarak.
+Arayüzün vurgusu mavi; kırmızı yalnız "yanlış" demek için ayrıldı, yoksa
+çalışırken doğru-yanlış renkleriyle karışıyordu.
+
+**Seslendirme.** Karakteri cihazın metin okuma motoruyla dinleyebilirsin
+(Ayarlar → Ses). Android'de cihaza Çince ses verisinin indirilmiş olması
+gerekiyor; uygulama bunu söylüyor ve adımları gösteriyor.
 
 **Havuzun tamamı, karışık sırayla.** Çalışmaya başlayınca seçtiğin
 kategorideki bütün kartlar karıştırılıp baştan sona gelir. Cevabı yazarsın,
@@ -172,12 +191,23 @@ veriyi paylaşmaz; her birinin kendi havuzu ve kendi tekrar geçmişi olur.
 Şimdilik ikisini birbirine yaklaştırmanın yolu yedek dosyasını aktarmak.
 Gerçek eşitleme sıradaki işlerden.
 
-**Yedek al.** Ayarlar → Dışa aktar bir JSON dosyası verir. İçe aktarma
+**Yedek al.** Ayarlar → Dışa aktar bir JSON dosyası verir; Android'de dosya
+paylaşım penceresiyle gönderilir (e-posta, Drive, ne istersen). İçe aktarma
 birleştiricidir, silici değil: aynı kaydın iki sürümü varsa yeni olan kazanır.
-İki cihazın yedeklerini üst üste yüklemek veri kaybettirmez.
+İki cihazın yedeklerini üst üste yüklemek veri kaybettirmez; aynı destede aynı
+karakterden iki kopya oluştuysa tekleştirilir. Cihaza ait ayarlar (dil, tema,
+seçili deste) yedekten gelmez — yedeğin işi kartları taşımak.
+
+Tekrar geçmişi 90 günde budanıyor. Yalnız "bugün kaç kart" sayacı için okunuyor
+ama hiç silinmeseydi yedeğin neredeyse tamamını o kaplardı.
 
 Kayıtlar `updatedAt` ve silme mezar taşı taşır; ileride gerçek bir cihaz
 eşitlemesi eklendiğinde mevcut veri olduğu gibi taşınabilir.
+
+Açılışta tarayıcıdan veriyi "kalıcı" işaretlemesi isteniyor — işaretlenmemiş
+veriyi tarayıcı, disk sıkıştığında haber vermeden silebiliyor. Tarayıcı bunu
+reddedebildiği için sonuç Ayarlar → Yedek altında yazılı. **Düzenli yedek tek
+gerçek güvence.**
 
 ---
 
@@ -185,7 +215,7 @@ eşitlemesi eklendiğinde mevcut veri olduğu gibi taşınabilir.
 
 ```
 index.html            arayüz iskeleti
-css/app.css           tema (açık/koyu, kağıt-mürekkep paleti)
+css/app.css           tema (açık/koyu, nötr zemin + mavi vurgu)
 js/app.js             ekranlar, oturum akışı
 js/store.js           IndexedDB katmanı, yedekleme
 js/srs.js             aralıklı tekrar algoritması
@@ -231,6 +261,9 @@ node tools/build-dict.mjs
 - Cihazlar arası eşitleme
 - Benzer görünen karakterlerin (未/末, 己/已) birbirini bozmaması için
   çıkış zamanlarının ayrılması
+- Eklenmiş bir kaydı düzenleme — şimdilik düzeltmenin yolu silip yeniden
+  eklemek, o da tekrar geçmişini götürüyor
+- Havuz listesi 300 kayıtta sessizce kesiliyor; sayaç toplamı yazıyor
 
 ---
 

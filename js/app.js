@@ -67,6 +67,35 @@ async function init() {
 
   // Eskiyen tekrar kayıtları yedeği şişiriyordu; açılışta bir kez budanıyor.
   db.pruneReviews().catch(() => {});
+  requestPersistence();
+}
+
+/**
+ * Tarayıcıdan veriyi "kalıcı" işaretlemesini ister.
+ *
+ * İşaretlenmemiş IndexedDB'yi tarayıcı, disk sıkıştığında haber vermeden
+ * silebiliyor — uygulamanın tek veri deposu o. İzin kutusu çıkmıyor; tarayıcı
+ * uygulama kurulu ya da düzenli kullanılıyorsa sessizce onaylıyor.
+ * Reddederse yapacak bir şey yok, yedek almak tek güvence kalıyor.
+ */
+async function requestPersistence() {
+  try {
+    if (!navigator.storage?.persist) return;
+    if (!(await navigator.storage.persisted())) await navigator.storage.persist();
+    // Tarayıcı reddedebiliyor; durumu Ayarlar'da göstermek, korunup
+    // korunmadığını bilmenin tek yolu.
+    showStorageState();
+  } catch {
+    // Desteklenmiyorsa ya da engellendiyse sessizce geç.
+  }
+}
+
+async function showStorageState() {
+  const node = $('storage-status');
+  if (!node || !navigator.storage?.persisted) return;
+  node.textContent = (await navigator.storage.persisted())
+    ? t('set.storagePersisted')
+    : t('set.storageVolatile');
 }
 
 async function refresh() {
@@ -1316,6 +1345,7 @@ function bindSettings() {
     state.settings.lang = e.target.value;
     await db.setSetting('lang', e.target.value);
     await refresh();
+    showStorageState();
     renderStudyHome();
   });
 

@@ -258,6 +258,12 @@ destelerin id'leri farklı olduğu için, oralardaki aynı karakter birleşmez.
 Cihaza ait ayarlar (`lang`, `theme`, `lastDeck`, `studyDeck`, `mode`) yedekten
 gelmez; yedeğin işi kartları taşımak.
 
+**Açılışta `navigator.storage.persist()` isteniyor.** İşaretlenmemiş
+IndexedDB'yi tarayıcı, disk sıkıştığında haber vermeden silebiliyor — uygulamanın
+tek veri deposu o. İzin kutusu çıkmıyor, tarayıcı sessizce karar veriyor ve
+**reddedebiliyor**; bu yüzden sonuç Ayarlar → Yedek altında yazılı. Reddedildiyse
+tek güvence düzenli yedek.
+
 ## Sırada
 
 - Cihazlar arası eşitleme (tablet ↔ bilgisayar ayrı havuzlar tutuyor)
